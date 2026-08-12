@@ -28,22 +28,9 @@ python3 -m http.server 8000
 
 ブラウザで `http://localhost:8000/` を開きます。OSによっては `python` コマンドを使用してください。
 
-ロジックテストはNode.js 20以降で実行できます。外部パッケージは使用しません。
-
-```bash
-npm test
-```
-
 ## GitHub Pagesで公開する
 
-すべての参照は相対パスで、ビルド済み成果物は不要です。
-
-1. このディレクトリの内容をGitHubリポジトリの `main` ブランチへ置きます。
-2. リポジトリの **Settings → Pages** を開きます。
-3. **Build and deployment** のSourceを **Deploy from a branch** にします。
-4. Branchを **main**、フォルダーを **/(root)** にして保存します。
-
-リポジトリ名配下のURLでも、そのまま動作します。
+すべての参照は相対パスで、ビルド済み成果物は不要です。`main` ブランチへの更新は、`.github/workflows/pages.yml` によりGitHub Pagesへ自動公開されます。
 
 ## 構成
 
@@ -61,7 +48,8 @@ npm test
 │   ├── cases.js        # 基本ケースとゲーム設定
 │   ├── additional-cases.js # ボーナスケースのシナリオデータ
 │   └── extra-case.js   # 探偵役で遊ぶエクストラケース
-└── tests/              # Node.js標準テスト
+├── assets/             # キャラクター、OGP、アイコン
+└── sound/              # BGMとメッセージ音
 ```
 
 `js/game.js`、`js/ui.js`、`js/scoring.js` にはケースIDによる分岐を置かず、すべての表示と判定をケースデータから生成します。
@@ -176,8 +164,4 @@ composition: {
 - 正解文と文節ごとの採点は、選ばれた `optionId` から自動生成
 - ケース固有の処理は `composition` 内で完結し、ゲーム本体にケースID別の分岐は不要
 
-追加後は `npm test` を実行し、全固定シナリオについて、未置換変数、質問解放、部分点、6問ルート、正解文、直前シナリオ除外、返答のランダム選択を確認してください。
-
-## 仕様
-
-詳細は [reference_interview_game_spec.md](./reference_interview_game_spec.md) を参照してください。
+追加後は、全固定シナリオについて、未置換変数、質問解放、部分点、6問ルート、正解文、直前シナリオ除外、返答のランダム選択を確認してください。
