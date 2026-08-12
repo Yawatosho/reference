@@ -6,14 +6,15 @@ import {
   startMessageSound,
   stopMessageSound,
   stopScreenMusic,
-} from "./audio.js?v=20260812-cutin1";
+} from "./audio.js?v=20260812-answersequence1";
 import {
   cutinDebugMarkup,
   getDebugCutin,
   selectCutin,
   setDebugCutin,
+  showAnswerSequence,
   showCutin,
-} from "./cutin.js?v=20260812-cutin2";
+} from "./cutin.js?v=20260812-answersequence2";
 import { trackPageView } from "./analytics.js?v=20260812-analytics1";
 import { GameSession } from "./game.js?v=20260812-recoveryrandom1";
 import {
@@ -300,7 +301,7 @@ function updateCutinDebugControls(selectedCutin) {
   const status = document.querySelector("[data-cutin-debug-status]");
   if (status) {
     status.textContent = selectedCutin
-      ? `${selectedCutin.toUpperCase()} を指定中`
+      ? `${selectedCutin === "answer" ? "FULL TEXT" : selectedCutin.toUpperCase()} を指定中`
       : "AUTO（通常抽選）";
   }
 }
@@ -386,7 +387,7 @@ app.addEventListener("click", (event) => {
     updateCutinDebugControls(selectedCutin);
     announce(
       selectedCutin
-        ? `回答時の演出を${selectedCutin.toUpperCase()}に指定しました。`
+        ? `回答時の演出を${selectedCutin === "answer" ? "FULL TEXT" : selectedCutin.toUpperCase()}に指定しました。`
         : "回答時の演出を通常抽選に戻しました。",
     );
     return;
@@ -397,8 +398,11 @@ app.addEventListener("click", (event) => {
     progress = recordResult(progress, currentCase.id, score.total);
     button.disabled = true;
     const cutin = getDebugCutin() ?? selectCutin(score);
-    playDecisionSound();
-    showCutin(cutin).then(() => {
+    const presentation =
+      cutin === "answer"
+        ? showAnswerSequence(session.getDeductionSentence())
+        : (playDecisionSound(), showCutin(cutin));
+    presentation.then(() => {
       renderResult();
       announce(`採点結果は${score.total}点、ランク${score.rank}です。`);
     });

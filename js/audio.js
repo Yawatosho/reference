@@ -11,6 +11,10 @@ const MESSAGE_SOUNDS = Object.freeze({
 });
 
 const DECISION_SOUND = new URL("../assets/cutin/decision.mp3", import.meta.url).href;
+const ANSWER_SOUNDS = Object.freeze({
+  type: new URL("../assets/cutin/type.mp3", import.meta.url).href,
+  answer: new URL("../assets/cutin/answer.mp3", import.meta.url).href,
+});
 
 const musicPlayer = new Audio();
 musicPlayer.loop = true;
@@ -27,6 +31,9 @@ let masterVolume = 1;
 const decisionPlayer = new Audio();
 decisionPlayer.preload = "auto";
 
+const answerEffectPlayer = new Audio();
+answerEffectPlayer.preload = "auto";
+
 export function setAudioVolume(volume) {
   const nextVolume = Number.isFinite(volume)
     ? Math.min(1, Math.max(0, volume))
@@ -35,6 +42,7 @@ export function setAudioVolume(volume) {
   musicPlayer.volume = 0.34 * masterVolume;
   messagePlayer.volume = 0.5 * masterVolume;
   decisionPlayer.volume = 0.7 * masterVolume;
+  answerEffectPlayer.volume = 0.72 * masterVolume;
 }
 
 setAudioVolume(masterVolume);
@@ -86,5 +94,31 @@ export function playDecisionSound() {
   decisionPlayer.currentTime = 0;
   decisionPlayer.play().catch(() => {
     // 音声再生が制限された環境でも演出は表示する。
+  });
+}
+
+export function startAnswerTypingSound() {
+  answerEffectPlayer.pause();
+  answerEffectPlayer.loop = true;
+  answerEffectPlayer.src = ANSWER_SOUNDS.type;
+  answerEffectPlayer.currentTime = 0;
+  answerEffectPlayer.play().catch(() => {
+    // 音声再生が制限された環境でも文字送りは継続する。
+  });
+}
+
+export function stopAnswerTypingSound() {
+  answerEffectPlayer.pause();
+  answerEffectPlayer.removeAttribute("src");
+  answerEffectPlayer.load();
+}
+
+export function playAnswerRevealSound() {
+  answerEffectPlayer.pause();
+  answerEffectPlayer.loop = false;
+  answerEffectPlayer.src = ANSWER_SOUNDS.answer;
+  answerEffectPlayer.currentTime = 0;
+  answerEffectPlayer.play().catch(() => {
+    // 音声再生が制限された環境でも全文表示は継続する。
   });
 }

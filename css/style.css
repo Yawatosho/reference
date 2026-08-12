@@ -1500,12 +1500,61 @@ select:disabled {
   animation: cutin-fade-out 180ms ease-in both;
 }
 
+.answer-sequence {
+  position: fixed;
+  z-index: 200;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 36px;
+  overflow: hidden;
+  color: #fff;
+  background: #050505;
+  font-family: "Courier New", "Nimbus Mono PS", "Noto Sans Mono", monospace;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-align: center;
+}
+
+.answer-sequence__typing,
+.answer-sequence__full {
+  width: min(980px, 100%);
+  margin: 0;
+  font-size: clamp(22px, 3.2vw, 50px);
+  line-height: 1.65;
+  white-space: pre-wrap;
+}
+
+.answer-sequence__typing::after {
+  content: "_";
+  display: inline-block;
+  margin-left: 0.08em;
+  animation: answer-cursor 650ms steps(1) infinite;
+}
+
+.answer-sequence__full {
+  display: none;
+}
+
+.answer-sequence--complete .answer-sequence__typing {
+  display: none;
+}
+
+.answer-sequence--complete .answer-sequence__full {
+  display: block;
+  animation: answer-reveal 180ms ease-out both;
+}
+
+.answer-sequence--leaving {
+  animation: cutin-fade-out 180ms ease-in both;
+}
+
 .cutin-debug {
   position: fixed;
   z-index: 110;
   right: 14px;
   bottom: 14px;
-  width: min(276px, calc(100% - 28px));
+  width: min(346px, calc(100% - 28px));
   padding: 12px;
   border: 1px dashed var(--accent-deep);
   color: var(--text);
@@ -1529,7 +1578,7 @@ select:disabled {
 
 .cutin-debug div {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 6px;
 }
 
@@ -1577,6 +1626,16 @@ select:disabled {
 @keyframes cutin-pop {
   from { opacity: 0; transform: scale(0.9) translateY(16px); }
   to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes answer-cursor {
+  0%, 48% { opacity: 1; }
+  49%, 100% { opacity: 0; }
+}
+
+@keyframes answer-reveal {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 @media (prefers-reduced-motion: reduce) {

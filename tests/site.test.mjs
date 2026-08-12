@@ -93,6 +93,8 @@ const audioFiles = Object.fromEntries(
       "message2.mp3",
       "message3.mp3",
       "../assets/cutin/decision.mp3",
+      "../assets/cutin/type.mp3",
+      "../assets/cutin/answer.mp3",
     ].map(async (filename) => [
       filename,
       await readFile(
@@ -200,7 +202,7 @@ test("文字送り中のセリフ音を話者とケースデータで切り替�
   assert.match(files["js/app.js"], /characterIndex >= characters\.length[\s\S]*?stopMessageSound\(\)/);
 });
 
-test("回答確定時は青のカットインを基本とし、正答数に応じて金・虹を抽選する", () => {
+test("回答確定時は青を基本とし、正答数に応じて金・虹・全文表示を抽選する", () => {
   const score = (correctCount) => ({
     segments: Array.from({ length: 4 }, (_, index) => ({
       ratio: index < correctCount ? 1 : 0,
@@ -208,19 +210,27 @@ test("回答確定時は青のカットインを基本とし、正答数に応�
   });
 
   assert.equal(selectCutin(score(2), () => 0), "blue");
-  assert.equal(selectCutin(score(3), () => 0.59), "gold");
-  assert.equal(selectCutin(score(3), () => 0.6), "blue");
-  assert.equal(selectCutin(score(4), () => 0.09), "rainbow");
-  assert.equal(selectCutin(score(4), () => 0.1), "gold");
-  assert.equal(selectCutin(score(4), () => 0.6), "blue");
+  assert.equal(selectCutin(score(3), () => 0.49), "gold");
+  assert.equal(selectCutin(score(3), () => 0.5), "blue");
+  assert.equal(selectCutin(score(4), () => 0.09), "answer");
+  assert.equal(selectCutin(score(4), () => 0.19), "rainbow");
+  assert.equal(selectCutin(score(4), () => 0.69), "gold");
+  assert.equal(selectCutin(score(4), () => 0.7), "blue");
 
   assert.match(files["js/audio.js"], /decision\.mp3/);
+  assert.match(files["js/audio.js"], /type\.mp3/);
+  assert.match(files["js/audio.js"], /answer\.mp3/);
   assert.match(files["js/app.js"], /getDebugCutin\(\) \?\? selectCutin\(score\)/);
   assert.match(files["js/app.js"], /playDecisionSound\(\)[\s\S]*?showCutin\(cutin\)/);
   assert.match(files["js/cutin.js"], /data-cutin-overlay/);
   assert.match(files["js/cutin.js"], /debug-cutin/);
   assert.match(files["js/cutin.js"], /setDebugCutin/);
   assert.match(files["js/cutin.js"], /data-action="set-cutin-debug"/);
+  assert.match(files["js/cutin.js"], /data-cutin="answer"/);
+  assert.match(files["js/app.js"], /cutin === "answer"/);
+  assert.match(files["js/cutin.js"], /showAnswerSequence/);
+  assert.match(files["js/cutin.js"], /answer-sequence__typing/);
+  assert.match(files["css/style.css"], /\.answer-sequence/);
   assert.match(files["css/style.css"], /\.cutin-overlay/);
   assert.match(files["css/style.css"], /\.cutin-debug/);
 });
