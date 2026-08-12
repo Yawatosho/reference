@@ -2,10 +2,12 @@ import { CASES } from "../data/cases.js?v=20260812-sourceclarity1";
 import {
   playScreenMusic,
   setAudioVolume,
+  playDecisionSound,
   startMessageSound,
   stopMessageSound,
   stopScreenMusic,
-} from "./audio.js?v=20260811-copy";
+} from "./audio.js?v=20260812-cutin1";
+import { cutinDebugMarkup, selectCutin, showCutin } from "./cutin.js?v=20260812-cutin1";
 import { trackPageView } from "./analytics.js?v=20260812-analytics1";
 import { GameSession } from "./game.js?v=20260812-recoveryrandom1";
 import {
@@ -25,7 +27,7 @@ import {
   interviewScreen,
   resultScreen,
   topScreen,
-} from "./ui.js?v=20260812-recoveryrandom1";
+} from "./ui.js?v=20260812-cutin1";
 
 const app = document.querySelector("#app");
 const liveRegion = document.querySelector("#live-region");
@@ -56,7 +58,7 @@ function mount(markup, { focus = true, preserveScroll = false } = {}) {
     window.clearTimeout(typingTimer);
     typingTimer = null;
   }
-  app.innerHTML = `${markup}${howToDialog()}${confirmDialog()}`;
+  app.innerHTML = `${markup}${howToDialog()}${confirmDialog()}${cutinDebugMarkup()}`;
   if (focus) app.focus({ preventScroll: true });
   window.scrollTo({
     ...(scrollPosition ?? { left: 0, top: 0 }),
@@ -360,11 +362,22 @@ app.addEventListener("click", (event) => {
     return renderDeduction();
   }
 
+  if (action === "preview-cutin") {
+    playDecisionSound();
+    showCutin(button.dataset.cutin);
+    return;
+  }
+
   if (action === "submit-answer") {
     const score = session.submitDeduction();
     progress = recordResult(progress, currentCase.id, score.total);
-    renderResult();
-    announce(`採点結果は${score.total}点、ランク${score.rank}です。`);
+    button.disabled = true;
+    const cutin = selectCutin(score);
+    playDecisionSound();
+    showCutin(cutin).then(() => {
+      renderResult();
+      announce(`採点結果は${score.total}点、ランク${score.rank}です。`);
+    });
     return;
   }
 

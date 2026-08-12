@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
+import { selectCutin } from "../js/cutin.js";
 
 const files = Object.fromEntries(
   await Promise.all(
@@ -15,6 +16,7 @@ const files = Object.fromEntries(
       "js/app.js",
       "js/analytics.js",
       "js/audio.js",
+      "js/cutin.js",
       "js/game.js",
       "js/scoring.js",
       "js/storage.js",
@@ -90,9 +92,14 @@ const audioFiles = Object.fromEntries(
       "message1.mp3",
       "message2.mp3",
       "message3.mp3",
+      "../assets/cutin/decision.mp3",
     ].map(async (filename) => [
       filename,
-      await readFile(new URL(`../sound/${filename}`, import.meta.url)),
+      await readFile(
+        filename.startsWith("../")
+          ? new URL(filename, import.meta.url)
+          : new URL(`../sound/${filename}`, import.meta.url),
+      ),
     ]),
   ),
 );
@@ -191,6 +198,28 @@ test("文字送り中のセリフ音を話者とケースデータで切り替�
   assert.match(files["js/ui.js"], /data-message-sound=/);
   assert.match(files["js/app.js"], /startMessageSound\(messages\[targetIndex\]\?\.dataset\.messageSound\)/);
   assert.match(files["js/app.js"], /characterIndex >= characters\.length[\s\S]*?stopMessageSound\(\)/);
+});
+
+test("回答確定時は青のカットインを基本とし、正答数に応じて金・虹を抽選する", () => {
+  const score = (correctCount) => ({
+    segments: Array.from({ length: 4 }, (_, index) => ({
+      ratio: index < correctCount ? 1 : 0,
+    })),
+  });
+
+  assert.equal(selectCutin(score(2), () => 0), "blue");
+  assert.equal(selectCutin(score(3), () => 0.59), "gold");
+  assert.equal(selectCutin(score(3), () => 0.6), "blue");
+  assert.equal(selectCutin(score(4), () => 0.09), "rainbow");
+  assert.equal(selectCutin(score(4), () => 0.1), "gold");
+  assert.equal(selectCutin(score(4), () => 0.6), "blue");
+
+  assert.match(files["js/audio.js"], /decision\.mp3/);
+  assert.match(files["js/app.js"], /playDecisionSound\(\)[\s\S]*?showCutin\(cutin\)/);
+  assert.match(files["js/cutin.js"], /data-cutin-overlay/);
+  assert.match(files["js/cutin.js"], /debug-cutin/);
+  assert.match(files["css/style.css"], /\.cutin-overlay/);
+  assert.match(files["css/style.css"], /\.cutin-debug/);
 });
 
 test("ゲーム本体にケースID固有の分岐がない", () => {

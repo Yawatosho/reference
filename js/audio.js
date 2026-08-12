@@ -10,6 +10,8 @@ const MESSAGE_SOUNDS = Object.freeze({
   message3: new URL("../sound/message3.mp3", import.meta.url).href,
 });
 
+const DECISION_SOUND = new URL("../assets/cutin/decision.mp3", import.meta.url).href;
+
 const musicPlayer = new Audio();
 musicPlayer.loop = true;
 musicPlayer.preload = "auto";
@@ -22,6 +24,9 @@ messagePlayer.preload = "auto";
 
 let masterVolume = 1;
 
+const decisionPlayer = new Audio();
+decisionPlayer.preload = "auto";
+
 export function setAudioVolume(volume) {
   const nextVolume = Number.isFinite(volume)
     ? Math.min(1, Math.max(0, volume))
@@ -29,6 +34,7 @@ export function setAudioVolume(volume) {
   masterVolume = nextVolume;
   musicPlayer.volume = 0.34 * masterVolume;
   messagePlayer.volume = 0.5 * masterVolume;
+  decisionPlayer.volume = 0.7 * masterVolume;
 }
 
 setAudioVolume(masterVolume);
@@ -72,4 +78,13 @@ export function stopMessageSound() {
   messagePlayer.pause();
   messagePlayer.removeAttribute("src");
   messagePlayer.load();
+}
+
+export function playDecisionSound() {
+  decisionPlayer.pause();
+  decisionPlayer.src = DECISION_SOUND;
+  decisionPlayer.currentTime = 0;
+  decisionPlayer.play().catch(() => {
+    // 音声再生が制限された環境でも演出は表示する。
+  });
 }
