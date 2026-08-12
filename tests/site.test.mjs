@@ -228,9 +228,15 @@ test("回答確定時は青を基本とし、正答数に応じて金・虹・�
   assert.match(files["js/cutin.js"], /data-action="set-cutin-debug"/);
   assert.match(files["js/cutin.js"], /data-cutin="answer"/);
   assert.match(files["js/app.js"], /cutin === "answer"/);
+  assert.match(files["js/app.js"], /cutin === "answer"[\s\S]*?stopScreenMusic\(\)/);
   assert.match(files["js/cutin.js"], /showAnswerSequence/);
   assert.match(files["js/cutin.js"], /answer-sequence__typing/);
+  assert.match(files["js/cutin.js"], /typing\.textContent = characters\[index\]/);
+  assert.match(files["js/cutin.js"], /typing\.textContent = ""/);
   assert.match(files["css/style.css"], /\.answer-sequence/);
+  assert.match(files["css/style.css"], /font-size:\s*clamp\(88px, 20vw, 280px\)/);
+  assert.match(files["index.html"], /Zen\+Old\+Mincho/);
+  assert.match(files["css/style.css"], /font-family:\s*"Zen Old Mincho"/);
   assert.match(files["css/style.css"], /\.cutin-overlay/);
   assert.match(files["css/style.css"], /\.cutin-debug/);
 });

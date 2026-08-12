@@ -14,7 +14,7 @@ import {
   setDebugCutin,
   showAnswerSequence,
   showCutin,
-} from "./cutin.js?v=20260812-answersequence2";
+} from "./cutin.js?v=20260812-typewriterchars3";
 import { trackPageView } from "./analytics.js?v=20260812-analytics1";
 import { GameSession } from "./game.js?v=20260812-recoveryrandom1";
 import {
@@ -400,7 +400,7 @@ app.addEventListener("click", (event) => {
     const cutin = getDebugCutin() ?? selectCutin(score);
     const presentation =
       cutin === "answer"
-        ? showAnswerSequence(session.getDeductionSentence())
+        ? (stopScreenMusic(), showAnswerSequence(session.getDeductionSentence()))
         : (playDecisionSound(), showCutin(cutin));
     presentation.then(() => {
       renderResult();

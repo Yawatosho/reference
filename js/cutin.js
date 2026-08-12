@@ -88,12 +88,17 @@ export async function showAnswerSequence(answerText) {
   ).matches;
 
   if (reducedMotion) {
-    typing.textContent = answerText;
+    typing.textContent = characters.at(-1) ?? "";
   } else {
     startAnswerTypingSound();
     for (let index = 0; index < characters.length; index += 1) {
-      typing.textContent += characters[index];
-      await new Promise((resolve) => window.setTimeout(resolve, 42));
+      typing.textContent = characters[index] === " " ? " " : characters[index];
+      typing.classList.remove("answer-sequence__typing--visible");
+      void typing.offsetWidth;
+      typing.classList.add("answer-sequence__typing--visible");
+      await new Promise((resolve) => window.setTimeout(resolve, 118));
+      typing.textContent = "";
+      await new Promise((resolve) => window.setTimeout(resolve, 36));
     }
     stopAnswerTypingSound();
   }
