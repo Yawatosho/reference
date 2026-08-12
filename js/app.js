@@ -37,6 +37,7 @@ let session = null;
 const lastVariantIds = new Map();
 let typingTimer = null;
 let renderVersion = 0;
+const mobileInterviewQuery = "(max-width: 760px)";
 
 function announce(message) {
   liveRegion.textContent = "";
@@ -99,7 +100,11 @@ function animateConversation(conversation) {
     return;
   }
 
-  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+  const isMobileInterview = window.matchMedia(mobileInterviewQuery).matches;
+  if (
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches &&
+    !isMobileInterview
+  ) {
     conversation.scrollTop = conversation.scrollHeight;
     revealRecoveryNotice();
     return;
@@ -178,8 +183,23 @@ function animateConversation(conversation) {
   typingTimer = window.setTimeout(startCurrentMessage, 120);
 }
 
+function moveConversationIntoViewOnMobile(conversation) {
+  if (!window.matchMedia(mobileInterviewQuery).matches) return;
+
+  const behavior = window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    ? "auto"
+    : "smooth";
+  window.requestAnimationFrame(() => {
+    conversation.scrollIntoView({ block: "start", behavior });
+  });
+}
+
 function renderInterview(options = {}) {
-  const { preserveScroll = false, ...screenOptions } = options;
+  const {
+    preserveScroll = false,
+    moveToConversation = false,
+    ...screenOptions
+  } = options;
   mount(
     interviewScreen(session, { ...screenOptions, volume: progress.volume }),
     { focus: !preserveScroll, preserveScroll },
@@ -190,7 +210,10 @@ function renderInterview(options = {}) {
     `${currentCase.title}｜インタビュー｜${document.title}`,
   );
   const conversation = document.querySelector("#conversation");
-  if (conversation) animateConversation(conversation);
+  if (conversation) {
+    if (moveToConversation) moveConversationIntoViewOnMobile(conversation);
+    animateConversation(conversation);
+  }
 }
 
 function renderDeduction() {
@@ -302,7 +325,12 @@ app.addEventListener("click", (event) => {
     const typingFrom = session.state.conversation.length;
     const result = session.askQuestion(button.dataset.questionId);
     if (result.reachedLimit) {
-      renderInterview({ limitNotice: true, typingFrom, preserveScroll: true });
+      renderInterview({
+        limitNotice: true,
+        typingFrom,
+        preserveScroll: true,
+        moveToConversation: true,
+      });
       const limitButton =
         session.caseData.presentation?.limitButton ?? "回答をまとめる";
       announce(`質問は${session.getQuestionLimit()}回で終了です。最後の返答を確認してから、「${limitButton}」へ進んでください。`);
@@ -311,6 +339,7 @@ app.addEventListener("click", (event) => {
         recoveredQuestions: result.recoveredQuestions,
         typingFrom,
         preserveScroll: true,
+        moveToConversation: true,
       });
       const unlockedCopy = result.newlyUnlocked.length
         ? ` 新しい質問が${result.newlyUnlocked.length}件解放されました。`
