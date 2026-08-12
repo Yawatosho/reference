@@ -53,15 +53,36 @@ export function isCutinDebugMode() {
   return new URLSearchParams(window.location.search).has("debug-cutin");
 }
 
+export function getDebugCutin() {
+  const cutinId = new URLSearchParams(window.location.search).get(
+    "debug-cutin",
+  );
+  return CUTIN_ASSETS[cutinId] ? cutinId : null;
+}
+
+export function setDebugCutin(cutinId) {
+  const url = new URL(window.location.href);
+  if (CUTIN_ASSETS[cutinId]) {
+    url.searchParams.set("debug-cutin", cutinId);
+  } else {
+    url.searchParams.set("debug-cutin", "1");
+  }
+  window.history.replaceState({}, "", url);
+  return getDebugCutin();
+}
+
 export function cutinDebugMarkup() {
   if (!isCutinDebugMode()) return "";
+  const selectedCutin = getDebugCutin();
   return `
     <aside class="cutin-debug" aria-label="カットイン確認用">
-      <strong>演出確認</strong>
+      <strong>回答演出の指定</strong>
+      <span class="cutin-debug__status" data-cutin-debug-status>${selectedCutin ? `${selectedCutin.toUpperCase()} を指定中` : "AUTO（通常抽選）"}</span>
       <div>
-        <button type="button" data-action="preview-cutin" data-cutin="blue">BLUE</button>
-        <button type="button" data-action="preview-cutin" data-cutin="gold">GOLD</button>
-        <button type="button" data-action="preview-cutin" data-cutin="rainbow">RAINBOW</button>
+        <button type="button" data-action="set-cutin-debug" data-cutin="" aria-pressed="${String(!selectedCutin)}">AUTO</button>
+        <button type="button" data-action="set-cutin-debug" data-cutin="blue" aria-pressed="${String(selectedCutin === "blue")}">BLUE</button>
+        <button type="button" data-action="set-cutin-debug" data-cutin="gold" aria-pressed="${String(selectedCutin === "gold")}">GOLD</button>
+        <button type="button" data-action="set-cutin-debug" data-cutin="rainbow" aria-pressed="${String(selectedCutin === "rainbow")}">RAINBOW</button>
       </div>
     </aside>`;
 }

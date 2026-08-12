@@ -1520,9 +1520,16 @@ select:disabled {
   color: var(--accent-deep);
 }
 
+.cutin-debug__status {
+  display: block;
+  margin-bottom: 9px;
+  color: var(--subtext);
+  font-size: 9px;
+}
+
 .cutin-debug div {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 6px;
 }
 
@@ -1539,6 +1546,12 @@ select:disabled {
 .cutin-debug button:hover {
   color: white;
   background: var(--teal);
+}
+
+.cutin-debug button[aria-pressed="true"] {
+  border-color: var(--accent-deep);
+  color: white;
+  background: var(--accent-deep);
 }
 
 @keyframes rise-in {

@@ -215,9 +215,12 @@ test("回答確定時は青のカットインを基本とし、正答数に応�
   assert.equal(selectCutin(score(4), () => 0.6), "blue");
 
   assert.match(files["js/audio.js"], /decision\.mp3/);
+  assert.match(files["js/app.js"], /getDebugCutin\(\) \?\? selectCutin\(score\)/);
   assert.match(files["js/app.js"], /playDecisionSound\(\)[\s\S]*?showCutin\(cutin\)/);
   assert.match(files["js/cutin.js"], /data-cutin-overlay/);
   assert.match(files["js/cutin.js"], /debug-cutin/);
+  assert.match(files["js/cutin.js"], /setDebugCutin/);
+  assert.match(files["js/cutin.js"], /data-action="set-cutin-debug"/);
   assert.match(files["css/style.css"], /\.cutin-overlay/);
   assert.match(files["css/style.css"], /\.cutin-debug/);
 });

@@ -7,7 +7,13 @@ import {
   stopMessageSound,
   stopScreenMusic,
 } from "./audio.js?v=20260812-cutin1";
-import { cutinDebugMarkup, selectCutin, showCutin } from "./cutin.js?v=20260812-cutin1";
+import {
+  cutinDebugMarkup,
+  getDebugCutin,
+  selectCutin,
+  setDebugCutin,
+  showCutin,
+} from "./cutin.js?v=20260812-cutin2";
 import { trackPageView } from "./analytics.js?v=20260812-analytics1";
 import { GameSession } from "./game.js?v=20260812-recoveryrandom1";
 import {
@@ -286,6 +292,19 @@ function updateSoundToggle(button) {
   if (label) label.textContent = `SOUND ${soundOn ? "ON" : "OFF"}`;
 }
 
+function updateCutinDebugControls(selectedCutin) {
+  document.querySelectorAll("[data-action=\"set-cutin-debug\"]").forEach((control) => {
+    const selected = control.dataset.cutin === (selectedCutin ?? "");
+    control.setAttribute("aria-pressed", String(selected));
+  });
+  const status = document.querySelector("[data-cutin-debug-status]");
+  if (status) {
+    status.textContent = selectedCutin
+      ? `${selectedCutin.toUpperCase()} を指定中`
+      : "AUTO（通常抽選）";
+  }
+}
+
 function beginSelectedCase() {
   if (!session || session.caseData.id !== currentCase.id) {
     session = createSession();
@@ -362,9 +381,14 @@ app.addEventListener("click", (event) => {
     return renderDeduction();
   }
 
-  if (action === "preview-cutin") {
-    playDecisionSound();
-    showCutin(button.dataset.cutin);
+  if (action === "set-cutin-debug") {
+    const selectedCutin = setDebugCutin(button.dataset.cutin);
+    updateCutinDebugControls(selectedCutin);
+    announce(
+      selectedCutin
+        ? `回答時の演出を${selectedCutin.toUpperCase()}に指定しました。`
+        : "回答時の演出を通常抽選に戻しました。",
+    );
     return;
   }
 
@@ -372,7 +396,7 @@ app.addEventListener("click", (event) => {
     const score = session.submitDeduction();
     progress = recordResult(progress, currentCase.id, score.total);
     button.disabled = true;
-    const cutin = selectCutin(score);
+    const cutin = getDebugCutin() ?? selectCutin(score);
     playDecisionSound();
     showCutin(cutin).then(() => {
       renderResult();
