@@ -1,4 +1,4 @@
-import { GAME_CONFIG } from "../data/cases.js?v=20260812-conversationpaths2";
+import { GAME_CONFIG } from "../data/cases.js?v=20260812-sourceclarity1";
 
 const escapeMap = {
   "&": "&amp;",

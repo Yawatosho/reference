@@ -1,4 +1,4 @@
-import { CASES } from "../data/cases.js?v=20260812-conversationpaths2";
+import { CASES } from "../data/cases.js?v=20260812-sourceclarity1";
 import {
   playScreenMusic,
   setAudioVolume,
@@ -25,7 +25,7 @@ import {
   interviewScreen,
   resultScreen,
   topScreen,
-} from "./ui.js?v=20260812-conversationpaths2";
+} from "./ui.js?v=20260812-sourceclarity1";
 
 const app = document.querySelector("#app");
 const liveRegion = document.querySelector("#live-region");

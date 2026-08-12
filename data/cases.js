@@ -814,7 +814,7 @@ export const CASES = [
         "必要なのは「{purposeFact}」のために、{themeFact}の{informationPhrase}を確認できる資料でした。資料名から利用目的と必要情報へ視点を移すことで、探せる候補が広がります。",
     },
     deduction: {
-      template: "{slot1}、{slot2}について、{slot3}を確認できる{slot4}。",
+      template: "{slot1}、{slot2}について、{slot3}を確認できる資料を探しており、{slot4}。",
       slots: [
         {
           id: "purpose",
@@ -856,16 +856,16 @@ export const CASES = [
           requiresAll: ["flexible_source"],
           partialRequiresAll: ["seen_in_class"],
           options: [
-            { id: "source_flexible", text: "資料を探している", score: 1 },
-            { id: "source_book", text: "本を探している", score: 0 },
-            { id: "source_practical", text: "図解と実例がある実用資料を探している", score: 0 },
-            { id: "source_any", text: "条件に合う資料を探している", score: 0.5 },
+            { id: "source_flexible", text: "前に見た本と同じものでなくてもよい", score: 1 },
+            { id: "source_book", text: "ウェブ資料ではなく本を希望している", score: 0 },
+            { id: "source_practical", text: "図解と実例のある実用資料を希望している", score: 0 },
+            { id: "source_any", text: "以前見た資料を手がかりにしている", score: 0.5 },
           ],
         },
       ],
     },
     correctSentence:
-      "授業の課題のため、日本の伝統色について、色名と実際の色見本を確認できる資料を探している。",
+      "授業の課題のため、日本の伝統色について、色名と実際の色見本を確認できる資料を探しており、前に見た本と同じものでなくてもよい。",
     explanation:
       "覚えていた書名は手がかりの一つにすぎませんでした。本当に必要なのは、日本の伝統色の名前と見本を確認できる情報です。資料名から利用目的へ視点を移すことで、候補が大きく広がります。",
     advice:
