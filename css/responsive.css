@@ -466,8 +466,16 @@
     min-height: 60px;
   }
 
-  .slot-card select {
+  .slot-choice-button {
     font-size: 15px;
+  }
+
+  .answer-choice-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .answer-choice-card {
+    min-height: 82px;
   }
 
   .result-card--answer blockquote {

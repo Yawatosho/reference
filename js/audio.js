@@ -10,6 +10,13 @@ const MESSAGE_SOUNDS = Object.freeze({
   message3: new URL("../sound/message3.mp3", import.meta.url).href,
 });
 
+const DECISION_SOUND = new URL("../assets/cutin/decision.mp3", import.meta.url).href;
+const NORMAL_DECISION_SOUND = new URL(
+  "../assets/cutin/decision_normal.mp3",
+  import.meta.url,
+).href;
+const CHOICE_SOUND = new URL("../sound/choice.mp3", import.meta.url).href;
+
 const musicPlayer = new Audio();
 musicPlayer.loop = true;
 musicPlayer.preload = "auto";
@@ -22,6 +29,13 @@ messagePlayer.preload = "auto";
 
 let masterVolume = 1;
 
+const decisionPlayer = new Audio();
+decisionPlayer.preload = "auto";
+
+const choicePlayer = new Audio();
+choicePlayer.preload = "auto";
+
+
 export function setAudioVolume(volume) {
   const nextVolume = Number.isFinite(volume)
     ? Math.min(1, Math.max(0, volume))
@@ -29,6 +43,8 @@ export function setAudioVolume(volume) {
   masterVolume = nextVolume;
   musicPlayer.volume = 0.34 * masterVolume;
   messagePlayer.volume = 0.5 * masterVolume;
+  decisionPlayer.volume = 0.7 * masterVolume;
+  choicePlayer.volume = 0.56 * masterVolume;
 }
 
 setAudioVolume(masterVolume);
@@ -72,4 +88,25 @@ export function stopMessageSound() {
   messagePlayer.pause();
   messagePlayer.removeAttribute("src");
   messagePlayer.load();
+}
+
+export function playDecisionSound(cutin = "rainbow") {
+  const decisionSound = ["blue", "gold"].includes(cutin)
+    ? NORMAL_DECISION_SOUND
+    : DECISION_SOUND;
+  decisionPlayer.pause();
+  decisionPlayer.src = decisionSound;
+  decisionPlayer.currentTime = 0;
+  decisionPlayer.play().catch(() => {
+    // 音声再生が制限された環境でも演出は表示する。
+  });
+}
+
+export function playChoiceSound() {
+  choicePlayer.pause();
+  choicePlayer.src = CHOICE_SOUND;
+  choicePlayer.currentTime = 0;
+  choicePlayer.play().catch(() => {
+    // 音声再生が制限された環境でも選択操作は継続する。
+  });
 }
