@@ -7,7 +7,7 @@ import {
   stopScreenMusic,
 } from "./audio.js?v=20260811-copy";
 import { trackPageView } from "./analytics.js?v=20260812-analytics1";
-import { GameSession } from "./game.js?v=20260811-optionshuffle1";
+import { GameSession } from "./game.js?v=20260812-recoveryrandom1";
 import {
   clearProgress,
   isCaseUnlocked,
@@ -25,7 +25,7 @@ import {
   interviewScreen,
   resultScreen,
   topScreen,
-} from "./ui.js?v=20260812-logportrait1";
+} from "./ui.js?v=20260812-recoveryrandom1";
 
 const app = document.querySelector("#app");
 const liveRegion = document.querySelector("#live-region");

@@ -403,7 +403,7 @@ export function howToDialog() {
         <p class="eyebrow"><span></span> ${GAME_CONFIG.title}</p>
         <h2 id="howto-title">良い答えは、良い質問から。</h2>
         <ol>
-          <li><span>01</span><div><strong>質問を選ぶ</strong><p>質問は基本${GAME_CONFIG.maxQuestions}回。楽しい雑談を深掘りすると、2回分回復します。</p></div></li>
+          <li><span>01</span><div><strong>質問を選ぶ</strong><p>質問は基本${GAME_CONFIG.maxQuestions}回。楽しい雑談を深掘りすると、1〜3回分回復します。</p></div></li>
           <li><span>02</span><div><strong>手がかりをつなぐ</strong><p>判明した事実を整理し、利用者の目的を見極めます。</p></div></li>
           <li><span>03</span><div><strong>問いを組み立てる</strong><p>4つの文節を選び、本当に知りたいことを完成させます。</p></div></li>
         </ol>

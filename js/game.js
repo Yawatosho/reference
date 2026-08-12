@@ -563,7 +563,9 @@ export class GameSession {
 
     this.state.askedQuestionIds.add(questionId);
     this.state.questionsUsed += 1;
-    const recoveredQuestions = question.smallTalkFollowUp ? 2 : 0;
+    const recoveredQuestions = question.smallTalkFollowUp
+      ? Math.floor(normalizeRandomValue(this.random()) * 3) + 1
+      : 0;
     this.state.questionBonus += recoveredQuestions;
     if (startsWarmMood) this.state.conversationMood = "warm";
     this.state.patronExpression =
