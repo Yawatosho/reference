@@ -25,7 +25,7 @@ import {
   interviewScreen,
   resultScreen,
   topScreen,
-} from "./ui.js?v=20260812-sourceclarity1";
+} from "./ui.js?v=20260812-logportrait1";
 
 const app = document.querySelector("#app");
 const liveRegion = document.querySelector("#live-region");

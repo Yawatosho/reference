@@ -2151,6 +2151,11 @@ body {
   display: block;
 }
 
+.message--patron p {
+  padding-left: 64px;
+  position: relative;
+}
+
 .message__text {
   display: block;
 }
@@ -2180,6 +2185,27 @@ body {
   height: 100%;
   object-fit: cover;
   object-position: center 28%;
+}
+
+.message-patron-icon {
+  width: 36px;
+  height: 36px;
+  position: absolute;
+  top: 50%;
+  left: 14px;
+  overflow: hidden;
+  transform: translateY(-50%);
+  border: 1px solid #c2d0cd;
+  border-radius: 50%;
+  background: #fff;
+}
+
+.message-patron-icon img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 18%;
 }
 
 /* Sound and confirmed-answer controls */

@@ -161,6 +161,7 @@ function conversationMarkup(
     typingFrom = conversation.length,
     messageSounds = {},
     playerAvatar = "",
+    respondentAvatar = "",
   } = {},
 ) {
   return conversation
@@ -173,7 +174,7 @@ function conversationMarkup(
       <div class="message message--${entry.speaker} ${index === conversation.length - 1 ? "message--latest" : ""}" data-message-sound="${escapeHtml(messageSound)}">
         <div class="message__content">
           <span class="message__speaker">${escapeHtml(entry.label)}</span>
-          <p><span class="message__text"${shouldType ? ` data-typing-text="${escapeHtml(entry.text)}" aria-hidden="true"` : ""}>${escapeHtml(entry.text)}</span>${shouldType ? `<span class="sr-only">${escapeHtml(entry.text)}</span>` : ""}${entry.speaker === "librarian" ? playerAvatar ? `<span class="librarian-avatar message-librarian-icon message-player-icon--custom" aria-hidden="true"><img src="${escapeHtml(playerAvatar)}" alt="" /></span>` : '<span class="librarian-avatar message-librarian-icon" aria-hidden="true"></span>' : ""}</p>
+          <p>${entry.speaker === "patron" && respondentAvatar ? `<span class="message-patron-icon" aria-hidden="true"><img src="${escapeHtml(respondentAvatar)}" alt="" /></span>` : ""}<span class="message__text"${shouldType ? ` data-typing-text="${escapeHtml(entry.text)}" aria-hidden="true"` : ""}>${escapeHtml(entry.text)}</span>${shouldType ? `<span class="sr-only">${escapeHtml(entry.text)}</span>` : ""}${entry.speaker === "librarian" ? playerAvatar ? `<span class="librarian-avatar message-librarian-icon message-player-icon--custom" aria-hidden="true"><img src="${escapeHtml(playerAvatar)}" alt="" /></span>` : '<span class="librarian-avatar message-librarian-icon" aria-hidden="true"></span>' : ""}</p>
         </div>
       </div>`;
       },
@@ -235,6 +236,7 @@ export function interviewScreen(
               GAME_CONFIG.messageSounds.defaultPatron,
           },
           playerAvatar: presentation.playerAvatar,
+          respondentAvatar: patronImage,
         })}</div>
         ${limitNotice ? `<div class="limit-notice" role="status"><strong>${escapeHtml(presentation.limitStatus)}</strong><span>最後の言葉を確認したら、「${escapeHtml(presentation.limitButton)}」を押してください。</span></div>` : ""}
         ${recoveredQuestions > 0 ? `<div class="recovery-notice" role="status" data-recovery-notice hidden><strong>会話が弾みました。</strong><span>質問できる回数が${escapeHtml(recoveredQuestions)}回分回復しました。</span></div>` : ""}
@@ -268,6 +270,9 @@ export function interviewScreen(
 export function deductionScreen(session, volume = 1) {
   const { caseData, state } = session;
   const presentation = getPresentation(caseData);
+  const respondentAvatar =
+    caseData.patron.reactions?.[state.patronExpression]?.image ??
+    caseData.patron.image;
   const sentence = session.getDeductionSentence();
   const slotStates = session.getDeductionSlotStates();
   return shell(`
@@ -285,7 +290,10 @@ export function deductionScreen(session, volume = 1) {
             <small>${state.questionsUsed} QUESTIONS</small>
           </div>
           <div class="deduction-log__conversation" tabindex="0" aria-label="${escapeHtml(presentation.deductionLogTitle)}">
-            ${conversationMarkup(state.conversation, { playerAvatar: presentation.playerAvatar })}
+            ${conversationMarkup(state.conversation, {
+              playerAvatar: presentation.playerAvatar,
+              respondentAvatar,
+            })}
           </div>
         </section>
         <div class="slot-grid">

@@ -452,6 +452,11 @@
     background-size: auto 312px;
   }
 
+  .message-patron-icon {
+    width: 34px;
+    height: 34px;
+  }
+
   .message p,
   .question-button {
     font-size: 15px;
