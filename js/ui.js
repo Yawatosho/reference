@@ -238,7 +238,7 @@ export function interviewScreen(
           playerAvatar: presentation.playerAvatar,
           respondentAvatar: patronImage,
         })}</div>
-        ${limitNotice ? `<div class="limit-notice" role="status"><strong>${escapeHtml(presentation.limitStatus)}</strong><span>最後の言葉を確認したら、「${escapeHtml(presentation.limitButton)}」を押してください。</span></div>` : ""}
+        ${limitNotice ? `<div class="limit-notice" role="status" data-limit-notice hidden><strong>${escapeHtml(presentation.limitStatus)}</strong><span>最後の言葉を確認したら、「${escapeHtml(presentation.limitButton)}」を押してください。</span></div>` : ""}
         ${recoveredQuestions > 0 ? `<div class="recovery-notice" role="status" data-recovery-notice hidden><strong>会話が弾みました。</strong><span>質問できる回数が${escapeHtml(recoveredQuestions)}回分回復しました。</span></div>` : ""}
         ${
           limitNotice
@@ -300,14 +300,14 @@ export function deductionScreen(session, volume = 1) {
           ${slotStates
             .map(
               ({ slot, availableOptions }, index) => `
-              <label class="slot-card">
+              <section class="slot-card">
                 <span class="slot-card__number">0${index + 1}</span>
                 <span class="slot-card__label">${escapeHtml(slot.label)}</span>
-                <select data-action="select-slot" data-slot-id="${escapeHtml(slot.id)}">
-                  <option value="">選択してください</option>
-                  ${availableOptions.map((option) => `<option value="${escapeHtml(option.id)}" ${state.deductionSelections[slot.id] === option.id ? "selected" : ""}>${escapeHtml(option.text)}</option>`).join("")}
-                </select>
-              </label>`,
+                <button class="slot-choice-button ${state.deductionSelections[slot.id] ? "is-selected" : ""}" type="button" data-action="open-slot-choice" data-slot-id="${escapeHtml(slot.id)}">
+                  <span data-slot-choice-value="${escapeHtml(slot.id)}">${escapeHtml(availableOptions.find((option) => option.id === state.deductionSelections[slot.id])?.text ?? "選択してください")}</span>
+                  <b aria-hidden="true">→</b>
+                </button>
+              </section>`,
             )
             .join("")}
         </div>
@@ -425,6 +425,18 @@ export function confirmDialog() {
       <div class="modal__actions">
         <button class="primary-button" data-action="confirm-deduce">回答をまとめる</button>
         <button class="secondary-button" data-action="close-dialog">まだ質問する</button>
+      </div>
+    </dialog>`;
+}
+
+export function answerChoiceDialog() {
+  return `
+    <dialog class="modal modal--answer-choice" id="answer-choice-dialog" aria-labelledby="answer-choice-title">
+      <div class="modal__header"><span>CHOOSE A PHRASE</span><button data-action="close-dialog" aria-label="閉じる">×</button></div>
+      <div class="modal__content">
+        <p class="eyebrow"><span></span> ANSWER PART</p>
+        <h2 id="answer-choice-title">回答の文節を選ぶ</h2>
+        <div class="answer-choice-grid" data-answer-choice-options></div>
       </div>
     </dialog>`;
 }

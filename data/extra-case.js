@@ -24,6 +24,7 @@ export function createExtraCases(maxQuestions) {
         playerAvatar:
           "./assets/characters/extra-detective-icon.webp?v=20260811-white1",
         playerMessageSound: "message3",
+        cutinAssetVariant: "det",
         resultPlayerName: "探偵さん",
         resultPlayerPortraits: {
           high:
