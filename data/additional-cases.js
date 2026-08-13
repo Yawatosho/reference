@@ -872,7 +872,7 @@ export function createAdditionalCases(maxQuestions) {
       opening: "トショカン。ニホンゴ ノ コトバ デ エラー ガ デマシタ。チョウサ シリョウ ヲ キボウ シマス。",
       presentation: {
         playerMessageSound: "computer",
-        playerMessagePlaybackRate: 1.14,
+        playerMessagePlaybackRate: 1.3,
       },
       patron: {
         name: "サービスロボット R08",
@@ -1726,7 +1726,7 @@ export function createAdditionalCases(maxQuestions) {
       opening: "◇○△？（地球の季節の行事を見ました。調べる資料はありますか？）",
       presentation: {
         playerMessageSound: "space10",
-        playerMessagePlaybackRate: 1.14,
+        playerMessagePlaybackRate: 1.3,
         playerMessageLoop: false,
       },
       patron: {
