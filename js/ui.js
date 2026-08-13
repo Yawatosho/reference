@@ -41,16 +41,18 @@ export function topScreen(progress) {
     <section class="title-cover" aria-labelledby="hero-title">
       <img class="title-cover__image" src="./assets/characters/title.png" alt="図書館のカウンターでメモを取る司書さん" decoding="async" fetchpriority="high" />
       <div class="title-cover__content">
-        <h1 id="hero-title" class="title-cover__logo"><img src="./assets/characters/logo.png" alt="${escapeHtml(GAME_CONFIG.title)}　${escapeHtml(GAME_CONFIG.subtitle)}" decoding="async" fetchpriority="high" /></h1>
-        <p class="title-cover__tagline">聞くことから、レファレンスは始まる。</p>
-        <ol class="title-cover__flow" aria-label="ゲームの流れ">
-          <li><span>01</span><div><strong>LISTEN</strong><small>言葉を聞く</small></div></li>
-          <li><span>02</span><div><strong>ASK</strong><small>質問する</small></div></li>
-          <li><span>03</span><div><strong>SUMMARIZE</strong><small>依頼をまとめる</small></div></li>
-        </ol>
-        <div class="title-cover__actions">
-          <button class="primary-button primary-button--large" data-action="cases">インタビューを始める <span aria-hidden="true">→</span></button>
-          <button class="secondary-button" data-action="howto">遊び方を見る</button>
+        <div class="title-cover__main">
+          <h1 id="hero-title" class="title-cover__logo"><img src="./assets/characters/logo.png" alt="${escapeHtml(GAME_CONFIG.title)}　${escapeHtml(GAME_CONFIG.subtitle)}" decoding="async" fetchpriority="high" /></h1>
+          <p class="title-cover__tagline">聞くことから、レファレンスは始まる。</p>
+          <ol class="title-cover__flow" aria-label="ゲームの流れ">
+            <li><span>01</span><div><strong>LISTEN</strong><small>言葉を聞く</small></div></li>
+            <li><span>02</span><div><strong>ASK</strong><small>質問する</small></div></li>
+            <li><span>03</span><div><strong>SUMMARIZE</strong><small>依頼をまとめる</small></div></li>
+          </ol>
+          <div class="title-cover__actions">
+            <button class="primary-button primary-button--large" data-action="cases">インタビューを始める <span aria-hidden="true">→</span></button>
+            <button class="secondary-button" data-action="howto">遊び方を見る</button>
+          </div>
         </div>
         <div class="title-cover__credit">
           <small>作成：やわらか図書館学</small>

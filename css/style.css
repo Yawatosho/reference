@@ -1838,11 +1838,15 @@ body {
   width: min(57%, 730px);
   min-height: inherit;
   padding: clamp(58px, 6vw, 92px) clamp(34px, 5vw, 76px);
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  flex-direction: column;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
   transform: translateY(clamp(14px, 1.8vw, 26px));
+}
+
+.title-cover__main {
+  width: min(570px, 100%);
+  align-self: center;
+  justify-self: center;
 }
 
 .title-cover__logo {
@@ -1935,17 +1939,14 @@ body {
 }
 
 .title-cover__credit {
-  width: min(570px, calc(100% - 2 * clamp(34px, 5vw, 76px)));
-  position: absolute;
-  left: 50%;
-  bottom: clamp(58px, 6vw, 92px);
+  width: min(570px, 100%);
+  justify-self: center;
   display: flex;
   align-items: center;
   justify-content: space-between;
   flex-wrap: nowrap;
   gap: 14px;
   color: var(--subtext);
-  transform: translateX(-50%);
 }
 
 .title-cover__credit small {
