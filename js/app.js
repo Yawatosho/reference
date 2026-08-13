@@ -35,7 +35,7 @@ import {
   interviewScreen,
   resultScreen,
   topScreen,
-} from "./ui.js?v=20260813-alien-audio1";
+} from "./ui.js?v=20260813-title-credit1";
 
 const app = document.querySelector("#app");
 const liveRegion = document.querySelector("#live-region");

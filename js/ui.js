@@ -52,6 +52,12 @@ export function topScreen(progress) {
           <button class="primary-button primary-button--large" data-action="cases">インタビューを始める <span aria-hidden="true">→</span></button>
           <button class="secondary-button" data-action="howto">遊び方を見る</button>
         </div>
+        <div class="title-cover__credit">
+          <small>作成：やわらか図書館学</small>
+          <a class="title-cover__games-link" href="https://yawatosho.github.io/">
+            <span>YAWATOSHO GAMES</span><span aria-hidden="true">↗</span>
+          </a>
+        </div>
       </div>
     </section>`, { header: false, volume: progress.volume });
 }

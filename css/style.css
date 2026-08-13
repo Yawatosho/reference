@@ -1934,6 +1934,40 @@ body {
   justify-content: space-between;
 }
 
+.title-cover__credit {
+  width: min(570px, 100%);
+  margin-top: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  color: var(--subtext);
+}
+
+.title-cover__credit small {
+  font-size: 11px;
+  letter-spacing: 0.04em;
+}
+
+.title-cover__games-link {
+  padding: 7px 11px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5em;
+  border: 1px solid rgba(0, 0, 0, 0.18);
+  border-radius: 999px;
+  color: inherit;
+  background: rgba(255, 255, 255, 0.82);
+  font: 600 11px/1.2 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  letter-spacing: 0.03em;
+  text-decoration: none;
+}
+
+.title-cover__games-link:hover {
+  border-color: var(--teal);
+  color: var(--teal);
+}
+
 .hero__visual::before {
   border-color: #cddbd7;
   background: #dce9e5;
