@@ -1839,7 +1839,7 @@ body {
   min-height: inherit;
   padding: clamp(58px, 6vw, 92px) clamp(34px, 5vw, 76px);
   display: grid;
-  grid-template-rows: minmax(0, 1fr) auto;
+  grid-template-rows: minmax(0, 1fr) 24px;
   transform: translateY(clamp(14px, 1.8vw, 26px));
 }
 
@@ -1940,16 +1940,18 @@ body {
 }
 
 .title-cover__credit {
-  width: 100%;
+  width: calc(100% - 2 * clamp(34px, 5vw, 76px));
   max-width: 570px;
-  margin-top: 22px;
-  justify-self: center;
+  position: absolute;
+  left: 50%;
+  bottom: calc(18px + clamp(14px, 1.8vw, 26px));
   display: flex;
   align-items: center;
   justify-content: flex-start;
   flex-wrap: nowrap;
   gap: 14px;
   color: var(--subtext);
+  transform: translateX(-50%);
 }
 
 .title-cover__credit small {
