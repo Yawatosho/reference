@@ -7,7 +7,7 @@ import {
   startMessageSound,
   stopMessageSound,
   stopScreenMusic,
-} from "./audio.js?v=20260813-character-audio1";
+} from "./audio.js?v=20260813-alien-audio1";
 import {
   cutinDebugMarkup,
   getDebugCutin,
@@ -35,7 +35,7 @@ import {
   interviewScreen,
   resultScreen,
   topScreen,
-} from "./ui.js?v=20260813-character-audio1";
+} from "./ui.js?v=20260813-alien-audio1";
 
 const app = document.querySelector("#app");
 const liveRegion = document.querySelector("#live-region");
@@ -160,6 +160,7 @@ function animateConversation(conversation) {
     startMessageSound(
       messages[targetIndex]?.dataset.messageSound,
       Number(messages[targetIndex]?.dataset.messageRate ?? 1),
+      messages[targetIndex]?.dataset.messageLoop !== "false",
     );
     typeNextCharacter();
   };
@@ -174,7 +175,9 @@ function animateConversation(conversation) {
     conversation.scrollTop = conversation.scrollHeight;
 
     if (characterIndex >= characters.length) {
-      stopMessageSound();
+      if (messages[targetIndex]?.dataset.messageLoop !== "false") {
+        stopMessageSound();
+      }
       targetIndex += 1;
       characterIndex = 0;
       if (targetIndex >= targets.length) {

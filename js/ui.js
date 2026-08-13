@@ -178,8 +178,12 @@ function conversationMarkup(
           typeof messageSoundConfig === "string"
             ? 1
             : messageSoundConfig.playbackRate ?? 1;
+        const messageLoop =
+          typeof messageSoundConfig === "string"
+            ? true
+            : messageSoundConfig.loop !== false;
         return `
-      <div class="message message--${entry.speaker} ${index === conversation.length - 1 ? "message--latest" : ""}" data-message-sound="${escapeHtml(messageSound)}" data-message-rate="${escapeHtml(messageRate)}">
+      <div class="message message--${entry.speaker} ${index === conversation.length - 1 ? "message--latest" : ""}" data-message-sound="${escapeHtml(messageSound)}" data-message-rate="${escapeHtml(messageRate)}" data-message-loop="${escapeHtml(messageLoop)}">
         <div class="message__content">
           <span class="message__speaker">${escapeHtml(entry.label)}</span>
           <p>${entry.speaker === "patron" && respondentAvatar ? `<span class="message-patron-icon" aria-hidden="true"><img src="${escapeHtml(respondentAvatar)}" alt="" /></span>` : ""}<span class="message__text"${shouldType ? ` data-typing-text="${escapeHtml(entry.text)}" aria-hidden="true"` : ""}>${escapeHtml(entry.text)}</span>${shouldType ? `<span class="sr-only">${escapeHtml(entry.text)}</span>` : ""}${entry.speaker === "librarian" ? playerAvatar ? `<span class="librarian-avatar message-librarian-icon message-player-icon--custom" aria-hidden="true"><img src="${escapeHtml(playerAvatar)}" alt="" /></span>` : '<span class="librarian-avatar message-librarian-icon" aria-hidden="true"></span>' : ""}</p>
@@ -241,12 +245,14 @@ export function interviewScreen(
             librarian: {
               id: presentation.playerMessageSound,
               playbackRate: presentation.playerMessagePlaybackRate,
+              loop: presentation.playerMessageLoop,
             },
             patron: {
               id:
                 caseData.patron.messageSound ??
                 GAME_CONFIG.messageSounds.defaultPatron,
               playbackRate: caseData.patron.messagePlaybackRate,
+              loop: caseData.patron.messageLoop,
             },
           },
           playerAvatar: presentation.playerAvatar,

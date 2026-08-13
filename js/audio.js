@@ -11,6 +11,7 @@ const MESSAGE_SOUNDS = Object.freeze({
   message1: new URL("../sound/message1.mp3", import.meta.url).href,
   message2: new URL("../sound/message2.mp3", import.meta.url).href,
   message3: new URL("../sound/message3.mp3", import.meta.url).href,
+  space10: new URL("../sound/space.mp3", import.meta.url).href,
 });
 
 const DECISION_SOUND = new URL("../assets/cutin/decision.mp3", import.meta.url).href;
@@ -77,13 +78,14 @@ export function stopScreenMusic() {
   activeTrack = null;
 }
 
-export function startMessageSound(soundId, playbackRate = 1) {
+export function startMessageSound(soundId, playbackRate = 1, loop = true) {
   const nextSound = MESSAGE_SOUNDS[soundId] ?? MESSAGE_SOUNDS.message1;
   const nextPlaybackRate = Number.isFinite(playbackRate)
     ? Math.min(1.5, Math.max(0.75, playbackRate))
     : 1;
   messagePlayer.pause();
   messagePlayer.src = nextSound;
+  messagePlayer.loop = loop !== false;
   messagePlayer.playbackRate = nextPlaybackRate;
   messagePlayer.currentTime = 0;
   messagePlayer.play().catch(() => {

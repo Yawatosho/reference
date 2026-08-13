@@ -1724,12 +1724,19 @@ export function createAdditionalCases(maxQuestions) {
       revealAfter: ["case09"],
       unlockHint: "CASE 09をクリア",
       opening: "◇○△？（地球の季節の行事を見ました。調べる資料はありますか？）",
+      presentation: {
+        playerMessageSound: "space10",
+        playerMessagePlaybackRate: 1.14,
+        playerMessageLoop: false,
+      },
       patron: {
         name: "惑星ポロロンの調査員",
         descriptor: "地球の行事を壮大な儀式だと思っている宇宙人",
         initials: "10",
         accent: "#917fb0",
         image: "./assets/characters/patron-10.webp",
+        messageSound: "space10",
+        messageLoop: false,
         timeLimitLine: "◎※▽…！◇○（通信時間が残りわずかです。ここまでの情報で必要な資料をまとめてください）",
         reactions: {
           high: {
