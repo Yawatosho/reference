@@ -1844,7 +1844,8 @@ body {
 }
 
 .title-cover__main {
-  width: min(570px, 100%);
+  width: 100%;
+  max-width: 570px;
   align-self: center;
   justify-self: center;
 }
@@ -1939,11 +1940,13 @@ body {
 }
 
 .title-cover__credit {
-  width: min(570px, 100%);
+  width: 100%;
+  max-width: 570px;
+  margin-top: 22px;
   justify-self: center;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   flex-wrap: nowrap;
   gap: 14px;
   color: var(--subtext);

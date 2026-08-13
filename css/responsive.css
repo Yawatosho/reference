@@ -125,6 +125,7 @@
     width: 100%;
     min-height: 0;
     padding: 28px 22px 34px;
+    display: block;
     background: #ffffff;
     transform: none;
   }

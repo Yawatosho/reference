@@ -35,7 +35,7 @@ import {
   interviewScreen,
   resultScreen,
   topScreen,
-} from "./ui.js?v=20260813-title-credit-grid1";
+} from "./ui.js?v=20260813-title-credit-fix1";
 
 const app = document.querySelector("#app");
 const liveRegion = document.querySelector("#live-region");
