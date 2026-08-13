@@ -7,7 +7,7 @@ import {
   startMessageSound,
   stopMessageSound,
   stopScreenMusic,
-} from "./audio.js?v=20260812-timing1";
+} from "./audio.js?v=20260813-character-audio1";
 import {
   cutinDebugMarkup,
   getDebugCutin,
@@ -35,7 +35,7 @@ import {
   interviewScreen,
   resultScreen,
   topScreen,
-} from "./ui.js?v=20260812-timing1";
+} from "./ui.js?v=20260813-character-audio1";
 
 const app = document.querySelector("#app");
 const liveRegion = document.querySelector("#live-region");
@@ -157,7 +157,10 @@ function animateConversation(conversation) {
 
   const startCurrentMessage = () => {
     if (version !== renderVersion) return;
-    startMessageSound(messages[targetIndex]?.dataset.messageSound);
+    startMessageSound(
+      messages[targetIndex]?.dataset.messageSound,
+      Number(messages[targetIndex]?.dataset.messageRate ?? 1),
+    );
     typeNextCharacter();
   };
 

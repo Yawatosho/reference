@@ -5,6 +5,9 @@ const SCREEN_MUSIC = Object.freeze({
 });
 
 const MESSAGE_SOUNDS = Object.freeze({
+  cat1: new URL("../sound/cat1.mp3", import.meta.url).href,
+  cat2: new URL("../sound/cat2.mp3", import.meta.url).href,
+  computer: new URL("../sound/computer.mp3", import.meta.url).href,
   message1: new URL("../sound/message1.mp3", import.meta.url).href,
   message2: new URL("../sound/message2.mp3", import.meta.url).href,
   message3: new URL("../sound/message3.mp3", import.meta.url).href,
@@ -74,10 +77,14 @@ export function stopScreenMusic() {
   activeTrack = null;
 }
 
-export function startMessageSound(soundId) {
+export function startMessageSound(soundId, playbackRate = 1) {
   const nextSound = MESSAGE_SOUNDS[soundId] ?? MESSAGE_SOUNDS.message1;
+  const nextPlaybackRate = Number.isFinite(playbackRate)
+    ? Math.min(1.5, Math.max(0.75, playbackRate))
+    : 1;
   messagePlayer.pause();
   messagePlayer.src = nextSound;
+  messagePlayer.playbackRate = nextPlaybackRate;
   messagePlayer.currentTime = 0;
   messagePlayer.play().catch(() => {
     // 音声再生が制限された環境でも文字送りは継続する。

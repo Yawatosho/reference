@@ -168,10 +168,18 @@ function conversationMarkup(
     .map(
       (entry, index) => {
         const shouldType = index >= typingFrom;
-        const messageSound =
+        const messageSoundConfig =
           messageSounds[entry.speaker] ?? messageSounds.default ?? "message1";
+        const messageSound =
+          typeof messageSoundConfig === "string"
+            ? messageSoundConfig
+            : messageSoundConfig.id ?? "message1";
+        const messageRate =
+          typeof messageSoundConfig === "string"
+            ? 1
+            : messageSoundConfig.playbackRate ?? 1;
         return `
-      <div class="message message--${entry.speaker} ${index === conversation.length - 1 ? "message--latest" : ""}" data-message-sound="${escapeHtml(messageSound)}">
+      <div class="message message--${entry.speaker} ${index === conversation.length - 1 ? "message--latest" : ""}" data-message-sound="${escapeHtml(messageSound)}" data-message-rate="${escapeHtml(messageRate)}">
         <div class="message__content">
           <span class="message__speaker">${escapeHtml(entry.label)}</span>
           <p>${entry.speaker === "patron" && respondentAvatar ? `<span class="message-patron-icon" aria-hidden="true"><img src="${escapeHtml(respondentAvatar)}" alt="" /></span>` : ""}<span class="message__text"${shouldType ? ` data-typing-text="${escapeHtml(entry.text)}" aria-hidden="true"` : ""}>${escapeHtml(entry.text)}</span>${shouldType ? `<span class="sr-only">${escapeHtml(entry.text)}</span>` : ""}${entry.speaker === "librarian" ? playerAvatar ? `<span class="librarian-avatar message-librarian-icon message-player-icon--custom" aria-hidden="true"><img src="${escapeHtml(playerAvatar)}" alt="" /></span>` : '<span class="librarian-avatar message-librarian-icon" aria-hidden="true"></span>' : ""}</p>
@@ -230,10 +238,16 @@ export function interviewScreen(
         <div class="conversation" id="conversation" tabindex="-1">${conversationMarkup(state.conversation, {
           typingFrom: firstTypingMessage,
           messageSounds: {
-            librarian: presentation.playerMessageSound,
-            patron:
-              caseData.patron.messageSound ??
-              GAME_CONFIG.messageSounds.defaultPatron,
+            librarian: {
+              id: presentation.playerMessageSound,
+              playbackRate: presentation.playerMessagePlaybackRate,
+            },
+            patron: {
+              id:
+                caseData.patron.messageSound ??
+                GAME_CONFIG.messageSounds.defaultPatron,
+              playbackRate: caseData.patron.messagePlaybackRate,
+            },
           },
           playerAvatar: presentation.playerAvatar,
           respondentAvatar: patronImage,

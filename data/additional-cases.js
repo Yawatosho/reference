@@ -870,12 +870,17 @@ export function createAdditionalCases(maxQuestions) {
       revealAfter: ["case07"],
       unlockHint: "CASE 07をクリア",
       opening: "トショカン。ニホンゴ ノ コトバ デ エラー ガ デマシタ。チョウサ シリョウ ヲ キボウ シマス。",
+      presentation: {
+        playerMessageSound: "computer",
+        playerMessagePlaybackRate: 1.14,
+      },
       patron: {
         name: "サービスロボット R08",
         descriptor: "日本語を文字どおり処理しがちな対話端末",
         initials: "08",
         accent: "#6e9ba0",
         image: "./assets/characters/patron-08.webp",
+        messageSound: "computer",
         timeLimitLine: "セツゾク ジカン ガ ノコリ ワズカ デス。ココマデ ノ ジョウホウ デ、ヒツヨウ ナ シリョウ ヲ マトメテ クダサイ。",
         reactions: {
           high: {
@@ -1311,12 +1316,16 @@ export function createAdditionalCases(maxQuestions) {
       revealAfter: ["case08"],
       unlockHint: "CASE 08をクリア",
       opening: "ニャー、ニャニャ？（気になる鳥を見た。調べられる本はある？）",
+      presentation: {
+        playerMessageSound: "cat2",
+      },
       patron: {
         name: "窓辺の猫",
         descriptor: "野鳥への知的好奇心が少し鋭い猫",
         initials: "09",
         accent: "#b38b68",
         image: "./assets/characters/patron-09.webp",
+        messageSound: "cat1",
         timeLimitLine: "ニャッ、ニャニャー！（たいへん、もうすぐ窓辺の見回りの時間だ。ここまでで探す本をまとめてほしい）",
         reactions: {
           high: {
