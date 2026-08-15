@@ -26,6 +26,14 @@ musicPlayer.loop = true;
 musicPlayer.preload = "auto";
 
 let activeTrack = null;
+let requestedTrack = null;
+let musicGain = 1;
+let musicFadeFrame = null;
+let musicTransitionId = 0;
+
+const MUSIC_VOLUME = 0.34;
+const MUSIC_FADE_OUT_MS = 400;
+const MUSIC_FADE_IN_MS = 560;
 
 const messagePlayer = new Audio();
 messagePlayer.loop = true;
@@ -39,16 +47,92 @@ decisionPlayer.preload = "auto";
 const choicePlayer = new Audio();
 choicePlayer.preload = "auto";
 
+function applyMusicVolume() {
+  musicPlayer.volume = MUSIC_VOLUME * masterVolume * musicGain;
+}
+
+function cancelMusicFade() {
+  if (musicFadeFrame !== null) {
+    window.cancelAnimationFrame(musicFadeFrame);
+    musicFadeFrame = null;
+  }
+}
+
+function fadeMusicTo(targetGain, duration, transitionId, onComplete) {
+  cancelMusicFade();
+  const startGain = musicGain;
+  const startedAt = performance.now();
+
+  const step = (now) => {
+    if (transitionId !== musicTransitionId) return;
+    const progress = duration <= 0 ? 1 : Math.min(1, (now - startedAt) / duration);
+    musicGain = startGain + (targetGain - startGain) * progress;
+    applyMusicVolume();
+    if (progress < 1) {
+      musicFadeFrame = window.requestAnimationFrame(step);
+      return;
+    }
+    musicFadeFrame = null;
+    onComplete?.();
+  };
+
+  musicFadeFrame = window.requestAnimationFrame(step);
+}
+
+function startTrack(nextTrack, transitionId) {
+  if (transitionId !== musicTransitionId) return;
+  musicPlayer.pause();
+  musicPlayer.src = nextTrack;
+  musicPlayer.currentTime = 0;
+  activeTrack = nextTrack;
+  musicGain = 0;
+  applyMusicVolume();
+  if (masterVolume <= 0) return;
+  musicPlayer.play().catch(() => {
+    // 自動再生が制限された場合は、次のプレイヤー操作時に再試行する。
+  });
+  fadeMusicTo(1, MUSIC_FADE_IN_MS, transitionId);
+}
 
 export function setAudioVolume(volume) {
   const nextVolume = Number.isFinite(volume)
     ? Math.min(1, Math.max(0, volume))
     : 1;
+  const wasMuted = masterVolume <= 0;
   masterVolume = nextVolume;
-  musicPlayer.volume = 0.34 * masterVolume;
+  applyMusicVolume();
   messagePlayer.volume = 0.5 * masterVolume;
   decisionPlayer.volume = 0.7 * masterVolume;
   choicePlayer.volume = 0.56 * masterVolume;
+
+  if (masterVolume <= 0) {
+    musicTransitionId += 1;
+    cancelMusicFade();
+    musicPlayer.pause();
+    messagePlayer.pause();
+    decisionPlayer.pause();
+    choicePlayer.pause();
+    if (!requestedTrack) {
+      musicPlayer.removeAttribute("src");
+      musicPlayer.load();
+      activeTrack = null;
+      musicGain = 1;
+      applyMusicVolume();
+    }
+    return;
+  }
+
+  if (wasMuted && requestedTrack) {
+    const transitionId = ++musicTransitionId;
+    if (activeTrack !== requestedTrack) {
+      startTrack(requestedTrack, transitionId);
+      return;
+    }
+    musicGain = 0;
+    applyMusicVolume();
+    musicPlayer.play().catch(() => {});
+    fadeMusicTo(1, MUSIC_FADE_IN_MS, transitionId);
+  }
 }
 
 setAudioVolume(masterVolume);
@@ -56,29 +140,69 @@ setAudioVolume(masterVolume);
 export function playScreenMusic(screen) {
   const nextTrack = SCREEN_MUSIC[screen];
   if (!nextTrack) return stopScreenMusic();
+  requestedTrack = nextTrack;
 
-  if (activeTrack === nextTrack) {
-    if (musicPlayer.paused) musicPlayer.play().catch(() => {});
+  const transitionId = ++musicTransitionId;
+  cancelMusicFade();
+
+  if (masterVolume <= 0) {
+    musicPlayer.pause();
+    musicPlayer.src = nextTrack;
+    musicPlayer.currentTime = 0;
+    activeTrack = nextTrack;
+    musicGain = 0;
+    applyMusicVolume();
     return;
   }
 
-  musicPlayer.pause();
-  musicPlayer.src = nextTrack;
-  musicPlayer.currentTime = 0;
-  activeTrack = nextTrack;
-  musicPlayer.play().catch(() => {
-    // 自動再生が制限された場合は、次のプレイヤー操作時に再試行する。
+  if (activeTrack === nextTrack) {
+    if (masterVolume <= 0) return;
+    if (musicPlayer.paused) musicPlayer.play().catch(() => {});
+    fadeMusicTo(1, MUSIC_FADE_IN_MS, transitionId);
+    return;
+  }
+
+  if (!activeTrack || !musicPlayer.src) {
+    startTrack(nextTrack, transitionId);
+    return;
+  }
+
+  fadeMusicTo(0, MUSIC_FADE_OUT_MS, transitionId, () => {
+    if (requestedTrack !== nextTrack) return;
+    startTrack(nextTrack, transitionId);
   });
 }
 
 export function stopScreenMusic() {
-  musicPlayer.pause();
-  musicPlayer.removeAttribute("src");
-  musicPlayer.load();
-  activeTrack = null;
+  requestedTrack = null;
+  const transitionId = ++musicTransitionId;
+  cancelMusicFade();
+  if (!activeTrack || musicPlayer.paused || masterVolume <= 0) {
+    musicPlayer.pause();
+    musicPlayer.removeAttribute("src");
+    musicPlayer.load();
+    activeTrack = null;
+    musicGain = 1;
+    applyMusicVolume();
+    return;
+  }
+
+  fadeMusicTo(0, MUSIC_FADE_OUT_MS, transitionId, () => {
+    if (transitionId !== musicTransitionId) return;
+    musicPlayer.pause();
+    musicPlayer.removeAttribute("src");
+    musicPlayer.load();
+    activeTrack = null;
+    musicGain = 1;
+    applyMusicVolume();
+  });
 }
 
 export function startMessageSound(soundId, playbackRate = 1, loop = true) {
+  if (masterVolume <= 0) {
+    stopMessageSound();
+    return;
+  }
   const nextSound = MESSAGE_SOUNDS[soundId] ?? MESSAGE_SOUNDS.message1;
   const nextPlaybackRate = Number.isFinite(playbackRate)
     ? Math.min(1.5, Math.max(0.75, playbackRate))
@@ -100,6 +224,7 @@ export function stopMessageSound() {
 }
 
 export function playDecisionSound(cutin = "rainbow") {
+  if (masterVolume <= 0) return;
   const decisionSound = ["blue", "gold"].includes(cutin)
     ? NORMAL_DECISION_SOUND
     : DECISION_SOUND;
@@ -112,8 +237,18 @@ export function playDecisionSound(cutin = "rainbow") {
 }
 
 export function playChoiceSound() {
+  playChoiceSoundAtVolume(1);
+}
+
+export function playQuestionSound() {
+  playChoiceSoundAtVolume(0.58);
+}
+
+function playChoiceSoundAtVolume(volumeScale) {
+  if (masterVolume <= 0) return;
   choicePlayer.pause();
   choicePlayer.src = CHOICE_SOUND;
+  choicePlayer.volume = 0.56 * masterVolume * volumeScale;
   choicePlayer.currentTime = 0;
   choicePlayer.play().catch(() => {
     // 音声再生が制限された環境でも選択操作は継続する。

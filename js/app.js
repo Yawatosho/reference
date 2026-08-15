@@ -3,11 +3,12 @@ import {
   playScreenMusic,
   setAudioVolume,
   playChoiceSound,
+  playQuestionSound,
   playDecisionSound,
   startMessageSound,
   stopMessageSound,
   stopScreenMusic,
-} from "./audio.js?v=20260813-alien-audio1";
+} from "./audio.js?v=20260815-interaction1";
 import {
   cutinDebugMarkup,
   getDebugCutin,
@@ -35,7 +36,7 @@ import {
   interviewScreen,
   resultScreen,
   topScreen,
-} from "./ui.js?v=20260813-title-credit-fix1";
+} from "./ui.js?v=20260815-interaction1";
 
 const app = document.querySelector("#app");
 const liveRegion = document.querySelector("#live-region");
@@ -46,8 +47,17 @@ let currentCase = null;
 let session = null;
 const lastVariantIds = new Map();
 let typingTimer = null;
+let activeTypingController = null;
+let questionFeedbackTimer = null;
+let resultRevealController = null;
+let resultRevealFrame = null;
+const resultRevealTimers = new Set();
 let renderVersion = 0;
 const mobileInterviewQuery = "(max-width: 760px)";
+
+function prefersReducedMotion() {
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
 
 function announce(message) {
   liveRegion.textContent = "";
@@ -62,10 +72,16 @@ function mount(markup, { focus = true, preserveScroll = false } = {}) {
     : null;
   renderVersion += 1;
   stopMessageSound();
+  activeTypingController = null;
   if (typingTimer !== null) {
     window.clearTimeout(typingTimer);
     typingTimer = null;
   }
+  if (questionFeedbackTimer !== null) {
+    window.clearTimeout(questionFeedbackTimer);
+    questionFeedbackTimer = null;
+  }
+  cancelResultReveal();
   app.innerHTML = `${markup}${howToDialog()}${confirmDialog()}${answerChoiceDialog()}${cutinDebugMarkup()}`;
   if (focus) app.focus({ preventScroll: true });
   window.scrollTo({
@@ -122,7 +138,7 @@ function animateConversation(conversation) {
 
   const isMobileInterview = window.matchMedia(mobileInterviewQuery).matches;
   if (
-    window.matchMedia("(prefers-reduced-motion: reduce)").matches &&
+    prefersReducedMotion() &&
     !isMobileInterview
   ) {
     conversation.scrollTop = conversation.scrollHeight;
@@ -154,9 +170,56 @@ function animateConversation(conversation) {
 
   let targetIndex = 0;
   let characterIndex = 0;
+  let canSkipCurrent = false;
+
+  const finishConversation = () => {
+    conversation.removeAttribute("aria-busy");
+    revealConversationNotices();
+    questionButtons.forEach((button) => {
+      button.disabled = false;
+    });
+    newQuestionButtons.forEach((button) => {
+      button.hidden = false;
+    });
+    activeTypingController = null;
+    typingTimer = null;
+  };
+
+  const finishCurrentMessage = (skipped = false) => {
+    if (!canSkipCurrent || version !== renderVersion) return false;
+    canSkipCurrent = false;
+    if (typingTimer !== null) {
+      window.clearTimeout(typingTimer);
+      typingTimer = null;
+    }
+
+    const target = targets[targetIndex];
+    target.textContent = target.dataset.typingText ?? "";
+    conversation.scrollTop = conversation.scrollHeight;
+    if (skipped || messages[targetIndex]?.dataset.messageLoop !== "false") {
+      stopMessageSound();
+    }
+
+    targetIndex += 1;
+    characterIndex = 0;
+    if (targetIndex >= targets.length) {
+      finishConversation();
+      return true;
+    }
+
+    typingTimer = window.setTimeout(() => {
+      if (version !== renderVersion) return;
+      messages[targetIndex].hidden = false;
+      messages[targetIndex].classList.add("message--turn-enter");
+      conversation.scrollTop = conversation.scrollHeight;
+      startCurrentMessage();
+    }, 360);
+    return true;
+  };
 
   const startCurrentMessage = () => {
     if (version !== renderVersion) return;
+    canSkipCurrent = true;
     startMessageSound(
       messages[targetIndex]?.dataset.messageSound,
       Number(messages[targetIndex]?.dataset.messageRate ?? 1),
@@ -174,45 +237,21 @@ function animateConversation(conversation) {
     target.textContent = characters.slice(0, characterIndex).join("");
     conversation.scrollTop = conversation.scrollHeight;
 
-    if (characterIndex >= characters.length) {
-      if (messages[targetIndex]?.dataset.messageLoop !== "false") {
-        stopMessageSound();
-      }
-      targetIndex += 1;
-      characterIndex = 0;
-      if (targetIndex >= targets.length) {
-        conversation.removeAttribute("aria-busy");
-        revealConversationNotices();
-        questionButtons.forEach((button) => {
-          button.disabled = false;
-        });
-        newQuestionButtons.forEach((button) => {
-          button.hidden = false;
-        });
-        typingTimer = null;
-        return;
-      }
-
-      typingTimer = window.setTimeout(() => {
-        if (version !== renderVersion) return;
-        messages[targetIndex].hidden = false;
-        messages[targetIndex].classList.add("message--turn-enter");
-        conversation.scrollTop = conversation.scrollHeight;
-        startCurrentMessage();
-      }, 360);
-      return;
-    }
+    if (characterIndex >= characters.length) return finishCurrentMessage();
 
     typingTimer = window.setTimeout(typeNextCharacter, 18);
   };
 
+  activeTypingController = {
+    skipCurrent: () => finishCurrentMessage(true),
+  };
   typingTimer = window.setTimeout(startCurrentMessage, 120);
 }
 
 function moveConversationIntoViewOnMobile(conversation) {
   if (!window.matchMedia(mobileInterviewQuery).matches) return;
 
-  const behavior = window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  const behavior = prefersReducedMotion()
     ? "auto"
     : "smooth";
   window.requestAnimationFrame(() => {
@@ -259,6 +298,115 @@ function renderResult() {
     `cases/${currentCase.id}/result`,
     `${currentCase.title}｜結果｜${document.title}`,
   );
+  startResultReveal(() => {
+    const score = session.state.score;
+    announce(`採点結果は${score.total}点、ランク${score.rank}です。`);
+  });
+}
+
+function scheduleResultStep(callback, delay) {
+  const timer = window.setTimeout(() => {
+    resultRevealTimers.delete(timer);
+    callback();
+  }, delay);
+  resultRevealTimers.add(timer);
+}
+
+function cancelResultReveal() {
+  resultRevealTimers.forEach((timer) => window.clearTimeout(timer));
+  resultRevealTimers.clear();
+  if (resultRevealFrame !== null) {
+    window.cancelAnimationFrame(resultRevealFrame);
+    resultRevealFrame = null;
+  }
+  resultRevealController = null;
+}
+
+function startResultReveal(onComplete) {
+  const root = document.querySelector("[data-result-reveal]");
+  if (!root) return;
+  const segments = [...root.querySelectorAll("[data-result-segment]")];
+  const totalParts = [...root.querySelectorAll("[data-result-total]")];
+  const rankParts = [...root.querySelectorAll("[data-result-rank]")];
+  const actions = root.querySelector("[data-result-actions]");
+  const scoreElement = root.querySelector("[data-result-score]");
+  const finalScore = Number(scoreElement?.dataset.resultScore ?? 0);
+  const scorePrecision = Number.isInteger(finalScore) ? 1 : 10;
+  const actionButtons = [...(actions?.querySelectorAll("button") ?? [])];
+  let completed = false;
+
+  root.classList.add("result-page--revealing");
+  root.setAttribute("aria-busy", "true");
+  segments.forEach((item) => item.removeAttribute("data-revealed"));
+  totalParts.forEach((item) => item.removeAttribute("data-revealed"));
+  rankParts.forEach((item) => item.removeAttribute("data-revealed"));
+  actionButtons.forEach((button) => {
+    button.disabled = true;
+  });
+  if (scoreElement) scoreElement.textContent = "0";
+
+  const finish = () => {
+    if (completed) return;
+    completed = true;
+    resultRevealTimers.forEach((timer) => window.clearTimeout(timer));
+    resultRevealTimers.clear();
+    if (resultRevealFrame !== null) {
+      window.cancelAnimationFrame(resultRevealFrame);
+      resultRevealFrame = null;
+    }
+    segments.forEach((item) => item.setAttribute("data-revealed", "true"));
+    totalParts.forEach((item) => item.setAttribute("data-revealed", "true"));
+    rankParts.forEach((item) => item.setAttribute("data-revealed", "true"));
+    if (scoreElement) scoreElement.textContent = String(finalScore);
+    actionButtons.forEach((button) => {
+      button.disabled = false;
+    });
+    root.classList.remove("result-page--revealing");
+    root.classList.add("result-page--revealed");
+    root.removeAttribute("aria-busy");
+    resultRevealController = null;
+    onComplete?.();
+  };
+
+  resultRevealController = { finish };
+  if (prefersReducedMotion()) {
+    finish();
+    return;
+  }
+
+  const initialDelay = 180;
+  const segmentInterval = 260;
+  segments.forEach((segment, index) => {
+    scheduleResultStep(
+      () => segment.setAttribute("data-revealed", "true"),
+      initialDelay + index * segmentInterval,
+    );
+  });
+
+  const totalDelay = initialDelay + segments.length * segmentInterval;
+  scheduleResultStep(() => {
+    totalParts.forEach((item) => item.setAttribute("data-revealed", "true"));
+    const startedAt = performance.now();
+    const countDuration = 650;
+    const countScore = (now) => {
+      if (completed) return;
+      const progress = Math.min(1, (now - startedAt) / countDuration);
+      const eased = 1 - (1 - progress) ** 3;
+      if (scoreElement) {
+        scoreElement.textContent = String(
+          Math.round(finalScore * eased * scorePrecision) / scorePrecision,
+        );
+      }
+      if (progress < 1) {
+        resultRevealFrame = window.requestAnimationFrame(countScore);
+        return;
+      }
+      resultRevealFrame = null;
+      rankParts.forEach((item) => item.setAttribute("data-revealed", "true"));
+      scheduleResultStep(finish, 320);
+    };
+    resultRevealFrame = window.requestAnimationFrame(countScore);
+  }, totalDelay);
 }
 
 function openDialog(id) {
@@ -385,7 +533,68 @@ function beginSelectedCase() {
   );
 }
 
+function askSelectedQuestion(questionId) {
+  const typingFrom = session.state.conversation.length;
+  const result = session.askQuestion(questionId);
+  if (result.reachedLimit) {
+    renderInterview({
+      limitNotice: true,
+      typingFrom,
+      preserveScroll: true,
+      moveToConversation: true,
+    });
+    const limitButton =
+      session.caseData.presentation?.limitButton ?? "回答をまとめる";
+    announce(`質問は${session.getQuestionLimit()}回で終了です。最後の返答を確認してから、「${limitButton}」へ進んでください。`);
+    return;
+  }
+
+  renderInterview({
+    recoveredQuestions: result.recoveredQuestions,
+    typingFrom,
+    preserveScroll: true,
+    moveToConversation: true,
+  });
+  const unlockedCopy = result.newlyUnlocked.length
+    ? ` 新しい質問が${result.newlyUnlocked.length}件解放されました。`
+    : "";
+  const respondentLabel =
+    session.caseData.presentation?.respondentLabel ?? "利用者";
+  announce(`${respondentLabel}から回答がありました。${unlockedCopy}`);
+}
+
+function beginQuestionFeedback(button) {
+  if (questionFeedbackTimer !== null) return;
+  const questionId = button.dataset.questionId;
+  const version = renderVersion;
+  button.classList.add("question-button--pressed");
+  document.querySelectorAll(".question-button:not(:disabled)").forEach((item) => {
+    item.disabled = true;
+  });
+  playQuestionSound();
+  questionFeedbackTimer = window.setTimeout(() => {
+    questionFeedbackTimer = null;
+    if (version !== renderVersion) return;
+    askSelectedQuestion(questionId);
+  }, prefersReducedMotion() ? 0 : 140);
+}
+
 app.addEventListener("click", (event) => {
+  if (resultRevealController && event.target.closest("[data-result-reveal]")) {
+    event.preventDefault();
+    resultRevealController.finish();
+    return;
+  }
+
+  if (
+    activeTypingController &&
+    event.target.closest("#conversation") &&
+    !event.target.closest("button, a, input, select, textarea, [contenteditable='true']")
+  ) {
+    if (activeTypingController.skipCurrent()) event.preventDefault();
+    return;
+  }
+
   const button = event.target.closest("button");
   if (!button || button.disabled) return;
 
@@ -413,33 +622,7 @@ app.addEventListener("click", (event) => {
   }
 
   if (action === "ask") {
-    const typingFrom = session.state.conversation.length;
-    const result = session.askQuestion(button.dataset.questionId);
-    if (result.reachedLimit) {
-      renderInterview({
-        limitNotice: true,
-        typingFrom,
-        preserveScroll: true,
-        moveToConversation: true,
-      });
-      const limitButton =
-        session.caseData.presentation?.limitButton ?? "回答をまとめる";
-      announce(`質問は${session.getQuestionLimit()}回で終了です。最後の返答を確認してから、「${limitButton}」へ進んでください。`);
-    } else {
-      renderInterview({
-        recoveredQuestions: result.recoveredQuestions,
-        typingFrom,
-        preserveScroll: true,
-        moveToConversation: true,
-      });
-      const unlockedCopy = result.newlyUnlocked.length
-        ? ` 新しい質問が${result.newlyUnlocked.length}件解放されました。`
-        : "";
-      const respondentLabel =
-        session.caseData.presentation?.respondentLabel ?? "利用者";
-      announce(`${respondentLabel}から回答がありました。${unlockedCopy}`);
-    }
-    return;
+    return beginQuestionFeedback(button);
   }
 
   if (action === "deduce") return openDialog("#confirm-dialog");
@@ -489,7 +672,6 @@ app.addEventListener("click", (event) => {
     });
     presentation.then(() => {
       renderResult();
-      announce(`採点結果は${score.total}点、ランク${score.rank}です。`);
     });
     return;
   }
@@ -518,8 +700,30 @@ app.addEventListener("click", (event) => {
 });
 
 document.addEventListener("keydown", (event) => {
-  if (event.key !== "Escape") return;
-  document.querySelector("dialog[open]")?.close();
+  if (event.key === "Escape") {
+    document.querySelector("dialog[open]")?.close();
+    return;
+  }
+
+  if (!['Enter', ' ', 'Spacebar'].includes(event.key)) return;
+  if (document.querySelector("dialog[open]")) return;
+  const target = event.target;
+  if (
+    target instanceof Element &&
+    target.closest("button, a, input, select, textarea, summary, [contenteditable='true']")
+  ) {
+    return;
+  }
+
+  if (resultRevealController) {
+    event.preventDefault();
+    resultRevealController.finish();
+    return;
+  }
+
+  if (activeTypingController?.skipCurrent()) {
+    event.preventDefault();
+  }
 });
 
 renderTop();

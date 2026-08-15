@@ -2459,3 +2459,59 @@ body {
   right: 20px;
   z-index: 2;
 }
+
+/* Interaction feedback */
+.conversation[aria-busy="true"] {
+  cursor: pointer;
+}
+
+.question-button.question-button--pressed,
+.question-button.question-button--pressed:disabled {
+  border-color: var(--teal);
+  color: var(--text);
+  background: #e8f1ee;
+  transform: translateY(1px) scale(0.99);
+  transition: border-color 120ms ease, background-color 120ms ease,
+    transform 120ms ease;
+}
+
+/* Staged result reveal */
+.result-page--revealing [data-result-segment],
+.result-page--revealing [data-result-total],
+.result-page--revealing [data-result-rank] {
+  opacity: 0;
+  transform: translateY(8px) scale(0.99);
+  transition: opacity 240ms ease, transform 240ms ease;
+}
+
+.result-page--revealing [data-result-segment][data-revealed="true"],
+.result-page--revealing [data-result-total][data-revealed="true"],
+.result-page--revealing [data-result-rank][data-revealed="true"] {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.result-page--revealing [data-result-actions] {
+  opacity: 0.35;
+  pointer-events: none;
+  transition: opacity 180ms ease;
+}
+
+.result-page--revealed [data-result-actions] {
+  opacity: 1;
+}
+
+.result-page--revealing .rank-badge[data-revealed="true"] {
+  animation: result-rank-in 320ms ease both;
+}
+
+@keyframes result-rank-in {
+  0% {
+    opacity: 0;
+    transform: rotate(4deg) scale(0.92);
+  }
+  100% {
+    opacity: 1;
+    transform: rotate(4deg) scale(1);
+  }
+}

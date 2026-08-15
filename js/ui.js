@@ -379,15 +379,15 @@ export function resultScreen(session, progress, hasNextCase) {
   const resultPlayerPortrait =
     presentation.resultPlayerPortraits?.[reaction.level];
   return shell(`
-    <section class="result-page" style="--case-accent:${escapeHtml(caseData.patron.accent)}">
+    <section class="result-page" style="--case-accent:${escapeHtml(caseData.patron.accent)}" data-result-reveal>
       <div class="result-hero">
         <p class="eyebrow"><span></span> ${escapeHtml(presentation.completionEyebrow)}</p>
-        <div class="rank-badge"><small>RANK</small><strong>${score.rank}</strong></div>
-        <div class="score-block"><strong>${score.total}</strong><span>/ 100</span></div>
-        <h1>${escapeHtml(score.rank === "S" ? presentation.resultHeadlineHigh : score.total >= 70 ? presentation.resultHeadlineMedium : presentation.resultHeadlineLow)}</h1>
-        <figure class="result-player-portrait result-player-portrait--${reaction.level}"><img src="${escapeHtml(resultPlayerPortrait)}" alt="${escapeHtml(presentation.resultPlayerName)}が${reaction.expressionLabel}表情" /></figure>
+        <div class="rank-badge" data-result-rank><small>RANK</small><strong>${score.rank}</strong></div>
+        <div class="score-block" data-result-total><strong data-result-score="${score.total}">${score.total}</strong><span>/ 100</span></div>
+        <h1 data-result-rank>${escapeHtml(score.rank === "S" ? presentation.resultHeadlineHigh : score.total >= 70 ? presentation.resultHeadlineMedium : presentation.resultHeadlineLow)}</h1>
+        <figure class="result-player-portrait result-player-portrait--${reaction.level}" data-result-rank><img src="${escapeHtml(resultPlayerPortrait)}" alt="${escapeHtml(presentation.resultPlayerName)}が${reaction.expressionLabel}表情" /></figure>
       </div>
-      <section class="patron-reaction patron-reaction--${reaction.level}" aria-labelledby="patron-reaction-title">
+      <section class="patron-reaction patron-reaction--${reaction.level}" aria-labelledby="patron-reaction-title" data-result-rank>
         <figure class="patron-reaction__portrait"><img src="${escapeHtml(reaction.image)}" alt="${escapeHtml(caseData.patron.name)}が${reaction.expressionLabel}表情" /></figure>
         <div class="patron-reaction__copy">
           <p class="patron-reaction__label">${escapeHtml(presentation.reactionLabelEnglish)} <span>${escapeHtml(presentation.reactionLabelJapanese)}</span></p>
@@ -402,7 +402,7 @@ export function resultScreen(session, progress, hasNextCase) {
             ${score.segments
               .map((segment) => {
                 const mark = markCopy[segment.mark];
-                return `<div class="segment-result segment-result--${segment.mark}"><span class="segment-result__mark">${mark.symbol}</span><div><small>${escapeHtml(segment.label)} · ${mark.text}</small><strong>${escapeHtml(segment.selectedText)}</strong></div><b>+${segment.points}</b></div>`;
+                return `<div class="segment-result segment-result--${segment.mark}" data-result-segment><span class="segment-result__mark">${mark.symbol}</span><div><small>${escapeHtml(segment.label)} · ${mark.text}</small><strong>${escapeHtml(segment.selectedText)}</strong></div><b>+${segment.points}</b></div>`;
               })
               .join("")}
           </div>
@@ -415,7 +415,7 @@ export function resultScreen(session, progress, hasNextCase) {
           <p class="best-score">BEST SCORE <strong>${escapeHtml(progress.bestScores[caseData.id])}</strong></p>
         </section>
       </div>
-      <div class="result-actions">
+      <div class="result-actions" data-result-actions>
         ${hasNextCase ? '<button class="primary-button primary-button--large" data-action="next-case">次のケースへ <span aria-hidden="true">→</span></button>' : '<button class="primary-button primary-button--large" data-action="cases">ケース一覧へ <span aria-hidden="true">→</span></button>'}
         <button class="secondary-button" data-action="replay">もう一度</button>
         ${hasNextCase ? '<button class="text-button" data-action="cases">ケース一覧へ</button>' : ""}
