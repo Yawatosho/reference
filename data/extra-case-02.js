@@ -131,7 +131,7 @@ export const EXTRA_CASE_02 = {
     },
     {
       id: "q_ex2_trigger",
-      text: "そもそも、今回オープンアクセスを気にされたきっかけは何でしたか？",
+      text: "今回オープンアクセスを気にされたきっかけは何でしたか？",
       requiresAll: [],
       requiresAny: [],
       response:
@@ -279,7 +279,7 @@ export const EXTRA_CASE_02 = {
     {
       id: "q_ex2_hypothesis",
       text:
-        "確認ですが、出版社でOAにすること自体が目的ではなく、APCを払わなくても即時OA方針に対応できる方法があるなら、それも含めて検討したいということでしょうか？",
+        "出版社のOAに限らず、即時OAに対応できる方法がほかにもあるなら、それも含めて考えたい、ということでしょうか？",
       requiresAll: [
         "compliance_goal",
         "publisher_oa_offer",
@@ -288,9 +288,9 @@ export const EXTRA_CASE_02 = {
       ],
       requiresAny: [],
       response:
-        "はい、まさにそれです。出版社のOAにすること自体が目的ではないんです。必要な要件を満たせるなら、ほかの方法も含めて考えたいんです。",
+        "はい、そうです。出版社のOAにすること自体が目的ではないので、ほかの方法でも対応できるのであれば、それも含めて考えたいです。",
       responseVariants: [
-        "そうです。APCを払いたくない、というだけではなくて、即時OAに必要な対応の選択肢を確認して、そのうえで決めたいんです。",
+        "そうですね。APCを払う方法だけに決めているわけではありません。必要な対応ができる方法をいくつか確認してから決めたいと思っています。",
       ],
       reveals: ["hypothesis_confirmed"],
     },
