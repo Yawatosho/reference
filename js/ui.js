@@ -1,8 +1,9 @@
-import { GAME_CONFIG } from "../data/cases.js?v=20260812-sourceclarity1";
+import { GAME_CONFIG } from "../data/cases.js?v=20260816-fiction1";
 import {
   ENDING_DIALOGUE_LINES,
+  getEndingIllustration,
   isEndingUnlocked,
-} from "./ending.js?v=20260815-ending-simple2";
+} from "./ending.js?v=20260815-ending-dialogue5";
 
 const escapeMap = {
   "&": "&amp;",
@@ -111,7 +112,7 @@ export function caseSelectScreen(cases, progress) {
                 </div>
               </div>
               <p class="case-card__category">${escapeHtml(data.category)}</p>
-              <h2>${escapeHtml(data.title)}</h2>
+              <h2>${escapeHtml(data.cardTitle ?? data.title)}</h2>
               <blockquote>「${escapeHtml(data.cardOpening ?? data.opening)}」</blockquote>
               <div class="case-card__meta">
                 <span>${escapeHtml(data.difficulty)}</span>
@@ -458,6 +459,21 @@ function endingUnlockedDialog() {
 
 export function endingIllustrationScreen(progress, dialogueIndex, isComplete) {
   const message = ENDING_DIALOGUE_LINES[dialogueIndex] ?? ENDING_DIALOGUE_LINES[0];
+  const activeIllustration = getEndingIllustration(dialogueIndex);
+  const creditPhotoPairs = Array.from({ length: 5 }, (_, pairIndex) => {
+    const firstCase = pairIndex * 2 + 1;
+    const secondCase = firstCase + 1;
+    const photo = (caseNumber, side) => {
+      const paddedNumber = String(caseNumber).padStart(2, "0");
+      return `<figure class="ending-credit-photo ending-credit-photo--${side}">
+        <img src="./assets/characters/case${paddedNumber}.webp" alt="CASE ${paddedNumber}のイラスト" />
+      </figure>`;
+    };
+    return `<div class="ending-credit-photo-pair" style="--credit-pair-delay:${(2.6 + pairIndex * 3.7).toFixed(1)}s" aria-hidden="true">
+      ${photo(firstCase, "left")}
+      ${photo(secondCase, "right")}
+    </div>`;
+  }).join("");
   const portrait = message.portrait ?? (message.role === "detective"
     ? "./assets/characters/extra-detective-reaction-medium-portrait.webp"
     : "./assets/characters/extra-librarian-portrait.webp");
@@ -465,9 +481,13 @@ export function endingIllustrationScreen(progress, dialogueIndex, isComplete) {
     <button class="ending-skip ending-skip--on-image" data-action="exit-ending">ケースファイルへ戻る</button>
     <h1 id="ending-illustration-title" class="sr-only">閉館後の司書さんと探偵さん</h1>
     <figure class="ending-illustration">
-      <picture>
+      <picture class="ending-illustration__scene ${activeIllustration === 1 ? "ending-illustration__scene--active" : ""}" data-ending-illustration="1">
         <source media="(max-width: 760px)" srcset="./assets/characters/ending-illustration_tate.webp" />
         <img src="./assets/characters/ending-illustration.webp" alt="閉館後の図書館で、司書さんと探偵さんが穏やかに話している" />
+      </picture>
+      <picture class="ending-illustration__scene ${activeIllustration === 2 ? "ending-illustration__scene--active" : ""}" data-ending-illustration="2" aria-hidden="true">
+        <source media="(max-width: 760px)" srcset="./assets/characters/ending-illustration_tate2.webp" />
+        <img src="./assets/characters/ending-illustration2.webp" alt="" />
       </picture>
     </figure>
     <section class="ending-illustration-dialogue ending-illustration-dialogue--${message.role}" data-ending-dialogue aria-label="閉館後の会話" aria-live="polite">
@@ -478,6 +498,9 @@ export function endingIllustrationScreen(progress, dialogueIndex, isComplete) {
       </div>
     </section>
     <section class="ending-credits" data-ending-credits aria-label="スタッフロール" aria-live="polite" hidden>
+      <div class="ending-credit-photos" aria-hidden="true">
+        ${creditPhotoPairs}
+      </div>
       <div class="ending-credits__roll" data-ending-credits-roll>
         <p><span>Illustration</span><strong>ChatGPT</strong></p>
         <p><span>Programming</span><strong>Codex</strong></p>
@@ -485,7 +508,12 @@ export function endingIllustrationScreen(progress, dialogueIndex, isComplete) {
         <p><span>効果音</span><strong>効果音ラボ</strong></p>
         <p><span>Produce</span><strong>やわらか図書館学</strong></p>
       </div>
-      <h2 class="ending-credits__thanks" data-ending-credits-thanks hidden>Thank you for Playing!</h2>
+      <section class="ending-credits__thanks" data-ending-credits-thanks hidden>
+        <figure class="ending-credits__final-photo">
+          <img src="./assets/characters/caseex.webp" alt="CASE EXの探偵さんと司書さん" />
+        </figure>
+        <h2>Thank you for Playing!</h2>
+      </section>
       <button class="ending-credits__exit" data-ending-credits-exit data-action="exit-ending" hidden>ケースファイルへ戻る <span aria-hidden="true">→</span></button>
     </section>
   </section>`, { compact: true, header: false, volume: progress.volume });

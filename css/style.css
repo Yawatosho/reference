@@ -2675,6 +2675,18 @@ body {
   animation: ending-illustration-in 800ms ease both;
 }
 .ending-illustration picture { width: 100%; height: 100%; display: block; }
+.ending-illustration__scene {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transform: scale(1.006);
+  transition: opacity 700ms ease, transform 850ms ease;
+}
+.ending-illustration__scene--active {
+  z-index: 1;
+  opacity: 1;
+  transform: scale(1);
+}
 .ending-illustration img { width: 100%; height: 100%; display: block; object-fit: cover; object-position: center; }
 @keyframes ending-illustration-in {
   from { opacity: 0; }
@@ -2748,6 +2760,7 @@ body {
 }
 .ending-credits__roll {
   position: absolute;
+  z-index: 3;
   top: 100%;
   left: 50%;
   width: min(680px, calc(100% - 40px));
@@ -2778,20 +2791,128 @@ body {
 .ending-credits[data-complete="true"] .ending-credits__roll {
   display: none;
 }
-.ending-credits__thanks {
+.ending-credit-photos {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  pointer-events: none;
+}
+.ending-credit-photo-pair {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  animation: ending-credit-photo-pair 4.6s ease both;
+  animation-delay: var(--credit-pair-delay);
+}
+.ending-credit-photo {
+  width: min(29vw, 460px);
+  margin: 0;
+  padding: 10px 10px 28px;
   position: absolute;
   top: 50%;
+  overflow: hidden;
+  border: 2px solid rgba(255, 255, 255, 0.94);
+  background: white;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.24);
+}
+.ending-credit-photo--left {
+  left: 4%;
+  transform: translateY(-50%) rotate(-3deg);
+}
+.ending-credit-photo--right {
+  right: 4%;
+  transform: translateY(-50%) rotate(2.5deg);
+}
+.ending-credit-photo img {
+  width: 100%;
+  height: auto;
+  display: block;
+  filter: brightness(0);
+  animation: ending-credit-photo-develop 4.6s ease both;
+  animation-delay: var(--credit-pair-delay);
+}
+.ending-credit-photo::after {
+  content: "";
+  position: absolute;
+  inset: 10px 10px 28px;
+  background: white;
+  opacity: 0;
+  pointer-events: none;
+  animation: ending-credit-photo-flash 4.6s ease both;
+  animation-delay: var(--credit-pair-delay);
+}
+@keyframes ending-credit-photo-pair {
+  0%, 3% { opacity: 0; }
+  7%, 82% { opacity: 1; }
+  100% { opacity: 0; }
+}
+@keyframes ending-credit-photo-develop {
+  0%, 12% { filter: brightness(0); }
+  20%, 100% { filter: brightness(1); }
+}
+@keyframes ending-credit-photo-flash {
+  0%, 11%, 22%, 100% { opacity: 0; }
+  15% { opacity: 0.96; }
+}
+.ending-credits__thanks {
+  position: absolute;
+  z-index: 4;
+  top: 50%;
   left: 50%;
-  width: calc(100% - 40px);
+  width: min(900px, calc(100% - 64px));
   margin: 0;
+  display: grid;
+  justify-items: center;
+  gap: 22px;
   color: white;
-  font: 500 clamp(27px, 4vw, 46px)/1.4 var(--font-serif-ja);
-  letter-spacing: 0.04em;
   text-align: center;
   transform: translate(-50%, -50%);
   animation: ending-thanks-in 700ms ease both;
 }
 .ending-credits__thanks[hidden] { display: none; }
+.ending-credits__thanks h2 {
+  margin: 0;
+  color: white;
+  font: 500 clamp(27px, 4vw, 46px)/1.4 var(--font-serif-ja);
+  letter-spacing: 0.04em;
+}
+.ending-credits__final-photo {
+  width: min(760px, 76vw);
+  max-height: 66vh;
+  margin: 0;
+  padding: 12px 12px 34px;
+  position: relative;
+  overflow: hidden;
+  border: 3px solid rgba(255, 255, 255, 0.96);
+  background: white;
+  box-shadow: 0 14px 38px rgba(0, 0, 0, 0.3);
+  transform: rotate(-1deg);
+}
+.ending-credits__final-photo img {
+  width: 100%;
+  max-height: calc(66vh - 49px);
+  display: block;
+  object-fit: contain;
+  filter: brightness(0);
+  animation: ending-final-photo-develop 1.4s ease both;
+}
+.ending-credits__final-photo::after {
+  content: "";
+  position: absolute;
+  inset: 12px 12px 34px;
+  background: white;
+  opacity: 0;
+  pointer-events: none;
+  animation: ending-final-photo-flash 1.4s ease both;
+}
+@keyframes ending-final-photo-develop {
+  0%, 18% { filter: brightness(0); }
+  34%, 100% { filter: brightness(1); }
+}
+@keyframes ending-final-photo-flash {
+  0%, 17%, 38%, 100% { opacity: 0; }
+  24% { opacity: 0.96; }
+}
 @keyframes ending-thanks-in {
   from { opacity: 0; transform: translate(-50%, calc(-50% + 12px)); }
   to { opacity: 1; transform: translate(-50%, -50%); }

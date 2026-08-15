@@ -1,3 +1,6 @@
+import { EXTRA_CASE_02 } from "./extra-case-02.js?v=20260816-fiction1";
+import { EXTRA_CASE_03 } from "./extra-case-03.js?v=20260816-fiction1";
+
 const EXTRA_UNLOCK_REQUIREMENTS = Object.freeze(["case10"]);
 
 export function createExtraCases(maxQuestions) {
@@ -617,5 +620,7 @@ export function createExtraCases(maxQuestions) {
       advice:
         "日常の謎も、先入観で決めつけず、変化が起きた時・場所・関係者・物の状態を一つずつ確かめると解きやすくなります。",
     },
+    EXTRA_CASE_02,
+    EXTRA_CASE_03,
   ];
 }

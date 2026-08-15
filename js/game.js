@@ -367,18 +367,66 @@ function resolveCaseComposition(
 
 function resolveLegacyCaseVariant(
   caseData,
-  { random = Math.random, excludeVariantId = null } = {},
+  {
+    random = Math.random,
+    excludeVariantId = null,
+    excludeVariantIds = [],
+  } = {},
 ) {
   const variants = [{ id: "default" }, ...(caseData.variants ?? [])];
-  const availableVariants = variants.filter(
-    (variant) => variants.length === 1 || variant.id !== excludeVariantId,
+  const excludedVariants = new Set(
+    [...excludeVariantIds, excludeVariantId].filter(Boolean),
   );
+  const availableVariants = variants.filter(
+    (variant) =>
+      variants.length === 1 || !excludedVariants.has(variant.id),
+  );
+  const selectableVariants =
+    availableVariants.length > 0 ? availableVariants : variants;
   const variantRandomValue = normalizeRandomValue(random());
   const variant =
-    availableVariants[
-      Math.floor(variantRandomValue * availableVariants.length)
+    selectableVariants[
+      Math.floor(variantRandomValue * selectableVariants.length)
     ];
   const optionOrderSeed = `${caseData.id}|${variant.id}|${variantRandomValue.toString(36)}`;
+
+  if (variant.scenarioData) {
+    const scenarioCase = {
+      ...caseData,
+      ...variant.scenarioData,
+      patron: {
+        ...caseData.patron,
+        ...(variant.scenarioData.patron ?? {}),
+      },
+    };
+    const questions = scenarioCase.questions.map((question) => {
+      const responseOptions = resolveQuestionResponses(question);
+      return {
+        ...question,
+        responseOptions,
+        response: responseOptions[0]?.text ?? question.response,
+        responseVariants: responseOptions.slice(1).map(({ text }) => text),
+      };
+    });
+    const deduction = {
+      ...scenarioCase.deduction,
+      slots: scenarioCase.deduction.slots.map((slot) => ({
+        ...slot,
+        options: shuffledOptions(
+          slot.options,
+          `${optionOrderSeed}|${slot.id}`,
+        ),
+      })),
+    };
+
+    return {
+      ...scenarioCase,
+      questions,
+      deduction,
+      activeVariantId: variant.id,
+    };
+  }
+
   const factOverrides = variant.facts ?? {};
   const questionOverrides = variant.questions ?? {};
 

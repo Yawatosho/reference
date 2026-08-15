@@ -1,4 +1,4 @@
-import { CASES } from "../data/cases.js?v=20260815-content1";
+import { CASES } from "../data/cases.js?v=20260816-fiction1";
 import {
   playScreenMusic,
   setAudioVolume,
@@ -19,9 +19,10 @@ import {
 import { trackPageView } from "./analytics.js?v=20260812-analytics1";
 import {
   ENDING_DIALOGUE_LINES,
+  getEndingIllustration,
   isEndingUnlocked,
-} from "./ending.js?v=20260815-ending-simple2";
-import { GameSession } from "./game.js?v=20260812-recoveryrandom1";
+} from "./ending.js?v=20260815-ending-dialogue5";
+import { GameSession } from "./game.js?v=20260815-extra02-scenarios1";
 import {
   clearProgress,
   isCaseUnlocked,
@@ -43,7 +44,7 @@ import {
   interviewScreen,
   resultScreen,
   topScreen,
-} from "./ui.js?v=20260815-ending-simple4";
+} from "./ui.js?v=20260816-fiction1";
 
 const app = document.querySelector("#app");
 const liveRegion = document.querySelector("#live-region");
@@ -380,12 +381,16 @@ function typeEndingMessage(message) {
 
   const characters = Array.from(fullText);
   let characterIndex = 0;
+  let soundStarted = false;
   text.textContent = "";
   if (endingState) endingState.typing = true;
   endingTypingController = { skipCurrent: finish };
-  startMessageSound(message.role === "detective" ? "message3" : "message2");
 
   const typeNextCharacter = () => {
+    if (!soundStarted) {
+      soundStarted = true;
+      startMessageSound(message.role === "detective" ? "message3" : "message2");
+    }
     characterIndex += 1;
     text.textContent = characters.slice(0, characterIndex).join("");
     if (characterIndex >= characters.length) {
@@ -394,7 +399,8 @@ function typeEndingMessage(message) {
     }
     endingTypingTimer = window.setTimeout(typeNextCharacter, 24);
   };
-  endingTypingTimer = window.setTimeout(typeNextCharacter, 100);
+  const openingDelay = endingState?.dialogueIndex === 0 ? 700 : 100;
+  endingTypingTimer = window.setTimeout(typeNextCharacter, openingDelay);
 }
 
 function renderEnding(dialogueIndex = 0) {
@@ -423,6 +429,14 @@ function showEndingLine(dialogueIndex) {
   const portrait = document.querySelector("[data-ending-portrait]");
   const speaker = document.querySelector("[data-ending-speaker]");
   if (!screen || !dialogue || !portrait || !speaker) return;
+
+  const activeIllustration = getEndingIllustration(safeIndex);
+  document.querySelectorAll("[data-ending-illustration]").forEach((illustration) => {
+    illustration.classList.toggle(
+      "ending-illustration__scene--active",
+      Number(illustration.dataset.endingIllustration) === activeIllustration,
+    );
+  });
 
   dialogue.classList.remove(
     "ending-illustration-dialogue--detective",
