@@ -8,7 +8,7 @@ import {
   startMessageSound,
   stopMessageSound,
   stopScreenMusic,
-} from "./audio.js?v=20260815-music-restart1";
+} from "./audio.js?v=20260815-music-reliable1";
 import {
   cutinDebugMarkup,
   getDebugCutin,
@@ -606,6 +606,29 @@ function beginQuestionFeedback(button) {
     askSelectedQuestion(questionId);
   }, prefersReducedMotion() ? 0 : 140);
 }
+
+const interviewStartActions = new Set(["select-case", "replay", "next-case"]);
+
+function primeInterviewMusicFromControl(target) {
+  const button = target.closest?.("button");
+  if (
+    !button ||
+    button.disabled ||
+    !interviewStartActions.has(button.dataset.action)
+  ) {
+    return;
+  }
+  playScreenMusic("interview");
+}
+
+app.addEventListener("pointerdown", (event) => {
+  primeInterviewMusicFromControl(event.target);
+});
+
+app.addEventListener("keydown", (event) => {
+  if (!["Enter", " ", "Spacebar"].includes(event.key)) return;
+  primeInterviewMusicFromControl(event.target);
+});
 
 app.addEventListener("click", (event) => {
   if (resultRevealController && event.target.closest("[data-result-reveal]")) {

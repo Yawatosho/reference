@@ -29,6 +29,8 @@ let activeTrack = null;
 let requestedTrack = null;
 let musicGain = 1;
 let musicFadeFrame = null;
+let musicFadeTimer = null;
+let musicRetryTimer = null;
 let musicTransitionId = 0;
 let musicStopInProgress = false;
 
@@ -57,12 +59,40 @@ function cancelMusicFade() {
     window.cancelAnimationFrame(musicFadeFrame);
     musicFadeFrame = null;
   }
+  if (musicFadeTimer !== null) {
+    window.clearTimeout(musicFadeTimer);
+    musicFadeTimer = null;
+  }
+}
+
+function cancelMusicRetry() {
+  if (musicRetryTimer !== null) {
+    window.clearTimeout(musicRetryTimer);
+    musicRetryTimer = null;
+  }
 }
 
 function fadeMusicTo(targetGain, duration, transitionId, onComplete) {
   cancelMusicFade();
   const startGain = musicGain;
   const startedAt = performance.now();
+  let completed = false;
+
+  const finish = () => {
+    if (completed || transitionId !== musicTransitionId) return;
+    completed = true;
+    if (musicFadeFrame !== null) {
+      window.cancelAnimationFrame(musicFadeFrame);
+      musicFadeFrame = null;
+    }
+    if (musicFadeTimer !== null) {
+      window.clearTimeout(musicFadeTimer);
+      musicFadeTimer = null;
+    }
+    musicGain = targetGain;
+    applyMusicVolume();
+    onComplete?.();
+  };
 
   const step = (now) => {
     if (transitionId !== musicTransitionId) return;
@@ -73,28 +103,78 @@ function fadeMusicTo(targetGain, duration, transitionId, onComplete) {
       musicFadeFrame = window.requestAnimationFrame(step);
       return;
     }
-    musicFadeFrame = null;
-    onComplete?.();
+    finish();
   };
 
   musicFadeFrame = window.requestAnimationFrame(step);
+  musicFadeTimer = window.setTimeout(finish, duration + 120);
 }
 
-function startTrack(nextTrack, transitionId) {
+function attemptMusicPlay(transitionId, retryIndex = 0) {
+  cancelMusicRetry();
+  if (
+    transitionId !== musicTransitionId ||
+    masterVolume <= 0 ||
+    !requestedTrack
+  ) {
+    return;
+  }
+
+  const playPromise = musicPlayer.play();
+  if (!playPromise?.catch) return;
+  playPromise.catch(() => {
+    if (
+      transitionId !== musicTransitionId ||
+      masterVolume <= 0 ||
+      !requestedTrack
+    ) {
+      return;
+    }
+    const retryDelays = [140, 420, 1000];
+    const delay = retryDelays[retryIndex];
+    if (delay === undefined) return;
+    musicRetryTimer = window.setTimeout(() => {
+      musicRetryTimer = null;
+      attemptMusicPlay(transitionId, retryIndex + 1);
+    }, delay);
+  });
+}
+
+function startTrack(nextTrack, transitionId, { audibleStart = false } = {}) {
   if (transitionId !== musicTransitionId) return;
   musicStopInProgress = false;
-  musicPlayer.pause();
-  musicPlayer.src = nextTrack;
-  musicPlayer.currentTime = 0;
+  const canReuseTrack = activeTrack === nextTrack && Boolean(musicPlayer.src);
+  if (!canReuseTrack) {
+    musicPlayer.pause();
+    musicPlayer.src = nextTrack;
+  }
+  try {
+    musicPlayer.currentTime = 0;
+  } catch {
+    // 読み込み前でシークできない環境では、そのまま再生開始する。
+  }
   activeTrack = nextTrack;
-  musicGain = 0;
+  musicGain = audibleStart ? 0.18 : 0;
   applyMusicVolume();
   if (masterVolume <= 0) return;
-  musicPlayer.play().catch(() => {
-    // 自動再生が制限された場合は、次のプレイヤー操作時に再試行する。
-  });
+  attemptMusicPlay(transitionId);
   fadeMusicTo(1, MUSIC_FADE_IN_MS, transitionId);
 }
+
+function retryMusicFromInteraction() {
+  if (
+    masterVolume <= 0 ||
+    !requestedTrack ||
+    activeTrack !== requestedTrack ||
+    !musicPlayer.paused
+  ) {
+    return;
+  }
+  attemptMusicPlay(musicTransitionId);
+}
+
+document.addEventListener("pointerup", retryMusicFromInteraction, true);
+document.addEventListener("keydown", retryMusicFromInteraction, true);
 
 export function setAudioVolume(volume) {
   const nextVolume = Number.isFinite(volume)
@@ -110,6 +190,7 @@ export function setAudioVolume(volume) {
   if (masterVolume <= 0) {
     musicTransitionId += 1;
     cancelMusicFade();
+    cancelMusicRetry();
     musicPlayer.pause();
     messagePlayer.pause();
     decisionPlayer.pause();
@@ -150,6 +231,7 @@ export function playScreenMusic(screen) {
 
   const transitionId = ++musicTransitionId;
   cancelMusicFade();
+  cancelMusicRetry();
 
   if (masterVolume <= 0) {
     musicPlayer.pause();
@@ -162,13 +244,13 @@ export function playScreenMusic(screen) {
   }
 
   if (shouldStartImmediately) {
-    startTrack(nextTrack, transitionId);
+    startTrack(nextTrack, transitionId, { audibleStart: true });
     return;
   }
 
   if (activeTrack === nextTrack) {
     if (masterVolume <= 0) return;
-    if (musicPlayer.paused) musicPlayer.play().catch(() => {});
+    attemptMusicPlay(transitionId);
     fadeMusicTo(1, MUSIC_FADE_IN_MS, transitionId);
     return;
   }
@@ -189,6 +271,7 @@ export function stopScreenMusic() {
   requestedTrack = null;
   const transitionId = ++musicTransitionId;
   cancelMusicFade();
+  cancelMusicRetry();
   if (!activeTrack || musicPlayer.paused || masterVolume <= 0) {
     musicPlayer.pause();
     musicPlayer.removeAttribute("src");
