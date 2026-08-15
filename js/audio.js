@@ -3,6 +3,7 @@ const SCREEN_MUSIC = Object.freeze({
   deduction: new URL("../sound/ask.mp3", import.meta.url).href,
   result: new URL("../sound/result.mp3", import.meta.url).href,
 });
+const ENDING_MUSIC = new URL("../sound/ending.mp3", import.meta.url).href;
 
 const MESSAGE_SOUNDS = Object.freeze({
   cat1: new URL("../sound/cat1.mp3", import.meta.url).href,
@@ -33,6 +34,9 @@ let musicFadeTimer = null;
 let musicRetryTimer = null;
 let musicTransitionId = 0;
 let musicStopInProgress = false;
+let activeTrackLoops = true;
+let requestedTrackLoops = true;
+let nonLoopTrackEnded = false;
 
 const MUSIC_VOLUME = 0.34;
 const MUSIC_FADE_OUT_MS = 400;
@@ -115,7 +119,8 @@ function attemptMusicPlay(transitionId, retryIndex = 0) {
   if (
     transitionId !== musicTransitionId ||
     masterVolume <= 0 ||
-    !requestedTrack
+    !requestedTrack ||
+    nonLoopTrackEnded
   ) {
     return;
   }
@@ -140,14 +145,24 @@ function attemptMusicPlay(transitionId, retryIndex = 0) {
   });
 }
 
-function startTrack(nextTrack, transitionId, { audibleStart = false } = {}) {
+function startTrack(
+  nextTrack,
+  transitionId,
+  { audibleStart = false, loop = true } = {},
+) {
   if (transitionId !== musicTransitionId) return;
   musicStopInProgress = false;
-  const canReuseTrack = activeTrack === nextTrack && Boolean(musicPlayer.src);
+  const canReuseTrack =
+    activeTrack === nextTrack &&
+    activeTrackLoops === loop &&
+    Boolean(musicPlayer.src);
   if (!canReuseTrack) {
     musicPlayer.pause();
     musicPlayer.src = nextTrack;
   }
+  musicPlayer.loop = loop;
+  activeTrackLoops = loop;
+  nonLoopTrackEnded = false;
   try {
     musicPlayer.currentTime = 0;
   } catch {
@@ -166,12 +181,17 @@ function retryMusicFromInteraction() {
     masterVolume <= 0 ||
     !requestedTrack ||
     activeTrack !== requestedTrack ||
-    !musicPlayer.paused
+    !musicPlayer.paused ||
+    nonLoopTrackEnded
   ) {
     return;
   }
   attemptMusicPlay(musicTransitionId);
 }
+
+musicPlayer.addEventListener("ended", () => {
+  if (!musicPlayer.loop) nonLoopTrackEnded = true;
+});
 
 document.addEventListener("pointerup", retryMusicFromInteraction, true);
 document.addEventListener("keydown", retryMusicFromInteraction, true);
@@ -206,10 +226,10 @@ export function setAudioVolume(volume) {
     return;
   }
 
-  if (wasMuted && requestedTrack) {
+  if (wasMuted && requestedTrack && !nonLoopTrackEnded) {
     const transitionId = ++musicTransitionId;
     if (activeTrack !== requestedTrack) {
-      startTrack(requestedTrack, transitionId);
+      startTrack(requestedTrack, transitionId, { loop: requestedTrackLoops });
       return;
     }
     musicGain = 0;
@@ -222,12 +242,22 @@ export function setAudioVolume(volume) {
 setAudioVolume(masterVolume);
 
 export function playScreenMusic(screen) {
-  const nextTrack = SCREEN_MUSIC[screen];
+  const nextTrack = screen === "ending" ? ENDING_MUSIC : SCREEN_MUSIC[screen];
+  const nextTrackLoops = screen !== "ending";
   if (!nextTrack) return stopScreenMusic();
+  if (
+    nextTrack === requestedTrack &&
+    nextTrack === activeTrack &&
+    !nextTrackLoops &&
+    nonLoopTrackEnded
+  ) {
+    return;
+  }
   const shouldStartImmediately =
     musicStopInProgress || requestedTrack === null || musicPlayer.paused;
   musicStopInProgress = false;
   requestedTrack = nextTrack;
+  requestedTrackLoops = nextTrackLoops;
 
   const transitionId = ++musicTransitionId;
   cancelMusicFade();
@@ -236,19 +266,25 @@ export function playScreenMusic(screen) {
   if (masterVolume <= 0) {
     musicPlayer.pause();
     musicPlayer.src = nextTrack;
+    musicPlayer.loop = nextTrackLoops;
     musicPlayer.currentTime = 0;
     activeTrack = nextTrack;
+    activeTrackLoops = nextTrackLoops;
+    nonLoopTrackEnded = false;
     musicGain = 0;
     applyMusicVolume();
     return;
   }
 
   if (shouldStartImmediately) {
-    startTrack(nextTrack, transitionId, { audibleStart: true });
+    startTrack(nextTrack, transitionId, {
+      audibleStart: true,
+      loop: nextTrackLoops,
+    });
     return;
   }
 
-  if (activeTrack === nextTrack) {
+  if (activeTrack === nextTrack && activeTrackLoops === nextTrackLoops) {
     if (masterVolume <= 0) return;
     attemptMusicPlay(transitionId);
     fadeMusicTo(1, MUSIC_FADE_IN_MS, transitionId);
@@ -256,19 +292,20 @@ export function playScreenMusic(screen) {
   }
 
   if (!activeTrack || !musicPlayer.src) {
-    startTrack(nextTrack, transitionId);
+    startTrack(nextTrack, transitionId, { loop: nextTrackLoops });
     return;
   }
 
   fadeMusicTo(0, MUSIC_FADE_OUT_MS, transitionId, () => {
     if (requestedTrack !== nextTrack) return;
-    startTrack(nextTrack, transitionId);
+    startTrack(nextTrack, transitionId, { loop: nextTrackLoops });
   });
 }
 
 export function stopScreenMusic() {
   if (musicStopInProgress) return;
   requestedTrack = null;
+  requestedTrackLoops = true;
   const transitionId = ++musicTransitionId;
   cancelMusicFade();
   cancelMusicRetry();
@@ -277,6 +314,9 @@ export function stopScreenMusic() {
     musicPlayer.removeAttribute("src");
     musicPlayer.load();
     activeTrack = null;
+    activeTrackLoops = true;
+    nonLoopTrackEnded = false;
+    musicPlayer.loop = true;
     musicStopInProgress = false;
     musicGain = 1;
     applyMusicVolume();
@@ -290,6 +330,9 @@ export function stopScreenMusic() {
     musicPlayer.removeAttribute("src");
     musicPlayer.load();
     activeTrack = null;
+    activeTrackLoops = true;
+    nonLoopTrackEnded = false;
+    musicPlayer.loop = true;
     musicStopInProgress = false;
     musicGain = 1;
     applyMusicVolume();

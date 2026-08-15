@@ -537,3 +537,55 @@
     padding-top: 10px;
   }
 }
+
+@media (max-width: 760px) {
+  .ending-access {
+    padding: 16px;
+    align-items: stretch;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .ending-access--title { margin-top: 16px; }
+  .ending-access--title .ending-access__copy > span { display: block; }
+  .ending-access .primary-button { width: 100%; }
+  .ending-unlocked-dialog__content { padding: 28px 22px 20px; }
+
+  .ending-screen {
+    min-height: calc(100vh - 28px);
+    margin: 14px 0;
+    border-radius: 12px;
+  }
+  .ending-heading { padding: 78px 18px 22px; }
+  .ending-heading h1 { font-size: clamp(25px, 8vw, 38px); }
+  .ending-record-list {
+    width: calc(100% - 32px);
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+  .ending-record-list li { min-height: 68px; padding: 12px; }
+  .ending-record-list strong { font-size: 22px; }
+
+  .ending-dialogue {
+    width: calc(100% - 28px);
+    min-height: 430px;
+    padding: 16px;
+  }
+  .ending-message { width: 92%; }
+  .ending-message p { padding: 13px 14px; font-size: 14px; }
+
+  .ending-screen--illustration {
+    padding: 68px 10px 24px;
+    justify-content: flex-start;
+  }
+  .ending-illustration { width: 100%; border-radius: 9px; }
+  .ending-illustration figcaption { left: 9px; bottom: 8px; }
+  .ending-illustration-dialogue {
+    width: 100%;
+    min-height: 150px;
+    margin: 12px 0 0;
+    padding: 16px;
+  }
+  .ending-next--on-image { margin-top: 16px; }
+  .ending-final__image { object-fit: contain; }
+  .ending-final__copy h1 { margin-bottom: 38px; }
+}

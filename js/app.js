@@ -1,4 +1,4 @@
-import { CASES } from "../data/cases.js?v=20260815-case05-voice1";
+import { CASES } from "../data/cases.js?v=20260815-content1";
 import {
   playScreenMusic,
   setAudioVolume,
@@ -8,7 +8,7 @@ import {
   startMessageSound,
   stopMessageSound,
   stopScreenMusic,
-} from "./audio.js?v=20260815-music-reliable1";
+} from "./audio.js?v=20260815-ending1";
 import {
   cutinDebugMarkup,
   getDebugCutin,
@@ -17,26 +17,36 @@ import {
   showCutin,
 } from "./cutin.js?v=20260812-timing1";
 import { trackPageView } from "./analytics.js?v=20260812-analytics1";
+import {
+  ENDING_DIALOGUE,
+  isEndingUnlocked,
+} from "./ending.js?v=20260815-ending1";
 import { GameSession } from "./game.js?v=20260812-recoveryrandom1";
 import {
   clearProgress,
   isCaseUnlocked,
   isCaseVisible,
   loadProgress,
+  markEndingSeen,
+  markEndingUnlockedNoticed,
   recordResult,
   recordVariant,
   setVolume,
-} from "./storage.js?v=20260811-case3multi1";
+} from "./storage.js?v=20260815-ending1";
 import {
   answerChoiceDialog,
   caseSelectScreen,
   confirmDialog,
   deductionScreen,
+  endingCompleteScreen,
+  endingDialogueScreen,
+  endingFinalScreen,
+  endingIllustrationScreen,
   howToDialog,
   interviewScreen,
   resultScreen,
   topScreen,
-} from "./ui.js?v=20260815-result-order1";
+} from "./ui.js?v=20260815-ending1";
 
 const app = document.querySelector("#app");
 const liveRegion = document.querySelector("#live-region");
@@ -52,7 +62,10 @@ let questionFeedbackTimer = null;
 let resultRevealController = null;
 let resultRevealFrame = null;
 const resultRevealTimers = new Set();
+const endingTimers = new Set();
 let renderVersion = 0;
+let endingState = null;
+let endingUnlockPending = false;
 const mobileInterviewQuery = "(max-width: 760px)";
 
 function prefersReducedMotion() {
@@ -82,6 +95,7 @@ function mount(markup, { focus = true, preserveScroll = false } = {}) {
     questionFeedbackTimer = null;
   }
   cancelResultReveal();
+  cancelEndingTimers();
   app.innerHTML = `${markup}${howToDialog()}${confirmDialog()}${answerChoiceDialog()}${cutinDebugMarkup()}`;
   if (focus) app.focus({ preventScroll: true });
   window.scrollTo({
@@ -91,6 +105,8 @@ function mount(markup, { focus = true, preserveScroll = false } = {}) {
 }
 
 function renderTop() {
+  endingState = null;
+  endingUnlockPending = false;
   currentCase = null;
   session = null;
   stopScreenMusic();
@@ -99,6 +115,8 @@ function renderTop() {
 }
 
 function renderCases() {
+  endingState = null;
+  endingUnlockPending = false;
   const caseView = CASES.filter((data) => isCaseVisible(data, progress)).map(
     (data) => ({
       data,
@@ -234,8 +252,7 @@ function animateConversation(conversation, conversationView = null) {
   const startCurrentMessage = () => {
     if (version !== renderVersion) return;
     canSkipCurrent = true;
-    startMessageSound(
-      messages[targetIndex]?.dataset.messageSound,
+    startMessageSound(messages[targetIndex]?.dataset.messageSound,
       Number(messages[targetIndex]?.dataset.messageRate ?? 1),
       messages[targetIndex]?.dataset.messageLoop !== "false",
     );
@@ -307,7 +324,9 @@ function renderDeduction() {
 
 function renderResult() {
   const currentIndex = CASES.findIndex((item) => item.id === currentCase.id);
-  mount(resultScreen(session, progress, currentIndex < CASES.length - 1));
+  mount(resultScreen(session, progress, currentIndex < CASES.length - 1, {
+    endingUnlockedNow: endingUnlockPending,
+  }));
   playScreenMusic("result");
   trackPageView(
     `cases/${currentCase.id}/result`,
@@ -316,7 +335,116 @@ function renderResult() {
   startResultReveal(() => {
     const score = session.state.score;
     announce(`採点結果は${score.total}点、ランク${score.rank}です。`);
+    if (endingUnlockPending) showEndingUnlockedNotice();
   });
+}
+
+function showEndingUnlockedNotice() {
+  const dialog = document.querySelector("#ending-unlocked-dialog");
+  if (!dialog?.showModal) return;
+  progress = markEndingUnlockedNoticed(progress);
+  endingUnlockPending = false;
+  dialog.showModal();
+  trackPageView("ending/unlocked", `エンディング解放｜${document.title}`);
+  announce("エンディングが解放されました。CASE 01から10のベストスコアが、すべて100点になりました。");
+}
+
+function scheduleEndingStep(callback, delay) {
+  const timer = window.setTimeout(() => {
+    endingTimers.delete(timer);
+    callback();
+  }, delay);
+  endingTimers.add(timer);
+}
+
+function cancelEndingTimers() {
+  endingTimers.forEach((timer) => window.clearTimeout(timer));
+  endingTimers.clear();
+}
+
+function renderEndingComplete() {
+  if (!isEndingUnlocked(progress)) return renderCases();
+  endingUnlockPending = false;
+  endingState = { phase: "record" };
+  currentCase = null;
+  session = null;
+  mount(endingCompleteScreen(progress));
+  playScreenMusic("ending");
+  trackPageView("ending/complete-record", `COMPLETE RECORD｜${document.title}`);
+
+  const records = [...document.querySelectorAll("[data-ending-record]")];
+  const summary = document.querySelector("[data-ending-record-summary]");
+  const reduced = prefersReducedMotion();
+  const interval = reduced ? 12 : 120;
+  const initialDelay = reduced ? 10 : 180;
+  records.forEach((record, index) => {
+    scheduleEndingStep(
+      () => record.setAttribute("data-confirmed", "true"),
+      initialDelay + index * interval,
+    );
+  });
+  const summaryDelay =
+    initialDelay + records.length * interval + (reduced ? 20 : 280);
+  scheduleEndingStep(() => {
+    summary?.setAttribute("data-revealed", "true");
+    announce(
+      "10ケースすべて、ベストスコア100点。すべての本当の質問を見つけました。",
+    );
+  }, summaryDelay);
+  scheduleEndingStep(
+    () => renderEndingDialogue(1),
+    summaryDelay + (reduced ? 280 : 1500),
+  );
+}
+
+function renderEndingDialogue(visibleCount) {
+  endingState = { phase: "dialogue", visibleCount };
+  mount(endingDialogueScreen(progress, visibleCount));
+  playScreenMusic("ending");
+  trackPageView("ending/dialogue", `閉館後｜${document.title}`);
+  const message = ENDING_DIALOGUE.beforeIllustration[visibleCount - 1];
+  if (message) announce(`${message.speaker}、${message.text}`);
+}
+
+function renderEndingIllustration(visibleCount = 0) {
+  endingState = { phase: "illustration", visibleCount };
+  mount(endingIllustrationScreen(progress, visibleCount));
+  playScreenMusic("ending");
+  trackPageView("ending/illustration", `閉館後の会話｜${document.title}`);
+  const message = ENDING_DIALOGUE.withIllustration[visibleCount - 1];
+  announce(
+    message
+      ? `${message.speaker}、${message.text}`
+      : "閉館後の図書館で、二人の会話が続きます。",
+  );
+}
+
+function renderEndingFinal() {
+  progress = markEndingSeen(progress);
+  endingState = { phase: "final" };
+  mount(endingFinalScreen(progress));
+  playScreenMusic("ending");
+  trackPageView("ending/final", `THANK YOU FOR PLAYING｜${document.title}`);
+  announce("THANK YOU FOR PLAYING。エンディングを最後まで視聴しました。");
+}
+
+function advanceEnding() {
+  if (!endingState) return;
+  if (endingState.phase === "dialogue") {
+    if (endingState.visibleCount < ENDING_DIALOGUE.beforeIllustration.length) {
+      renderEndingDialogue(endingState.visibleCount + 1);
+      return;
+    }
+    renderEndingIllustration(0);
+    return;
+  }
+  if (endingState.phase === "illustration") {
+    if (endingState.visibleCount < ENDING_DIALOGUE.withIllustration.length) {
+      renderEndingIllustration(endingState.visibleCount + 1);
+      return;
+    }
+    renderEndingFinal();
+  }
 }
 
 function scheduleResultStep(callback, delay) {
@@ -658,6 +786,15 @@ app.addEventListener("click", (event) => {
     return;
   }
 
+  if (
+    endingState &&
+    event.target.closest("[data-ending-advance-area]") &&
+    !event.target.closest("button, a, input, select, textarea, [contenteditable='true']")
+  ) {
+    advanceEnding();
+    return;
+  }
+
   const button = event.target.closest("button");
   if (!button || button.disabled) return;
 
@@ -667,6 +804,16 @@ app.addEventListener("click", (event) => {
   if (action === "cases") return renderCases();
   if (action === "howto") return openDialog("#howto-dialog");
   if (action === "close-dialog") return closeDialog(button);
+  if (action === "view-ending") {
+    button.closest("dialog")?.close();
+    return renderEndingComplete();
+  }
+  if (action === "ending-later") {
+    button.closest("dialog")?.close();
+    return renderCases();
+  }
+  if (action === "advance-ending") return advanceEnding();
+  if (action === "exit-ending") return renderCases();
 
   if (action === "sound-toggle") {
     progress = setVolume(progress, progress.volume > 0 ? 0 : 1);
@@ -725,8 +872,13 @@ app.addEventListener("click", (event) => {
   }
 
   if (action === "submit-answer") {
+    const wasEndingUnlocked = isEndingUnlocked(progress);
     const score = session.submitDeduction();
     progress = recordResult(progress, currentCase.id, score.total);
+    endingUnlockPending =
+      !wasEndingUnlocked &&
+      isEndingUnlocked(progress) &&
+      progress.endingUnlockedNoticed !== true;
     button.disabled = true;
     const cutin = getDebugCutin() ?? selectCutin(score);
     playDecisionSound(cutin);
@@ -775,6 +927,15 @@ document.addEventListener("keydown", (event) => {
     target instanceof Element &&
     target.closest("button, a, input, select, textarea, summary, [contenteditable='true']")
   ) {
+    return;
+  }
+
+  if (
+    endingState &&
+    ["dialogue", "illustration"].includes(endingState.phase)
+  ) {
+    event.preventDefault();
+    advanceEnding();
     return;
   }
 

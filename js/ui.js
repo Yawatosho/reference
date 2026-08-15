@@ -1,4 +1,9 @@
 import { GAME_CONFIG } from "../data/cases.js?v=20260812-sourceclarity1";
+import {
+  ENDING_DIALOGUE,
+  ENDING_REQUIRED_CASES,
+  isEndingUnlocked,
+} from "./ending.js?v=20260815-ending1";
 
 const escapeMap = {
   "&": "&amp;",
@@ -37,6 +42,7 @@ export function shell(content, options = {}) {
 }
 
 export function topScreen(progress) {
+  const endingUnlocked = isEndingUnlocked(progress);
   return shell(`
     <section class="title-cover" aria-labelledby="hero-title">
       <img class="title-cover__image" src="./assets/characters/title.png" alt="図書館のカウンターでメモを取る司書さん" decoding="async" fetchpriority="high" />
@@ -53,6 +59,7 @@ export function topScreen(progress) {
             <button class="primary-button primary-button--large" data-action="cases">インタビューを始める <span aria-hidden="true">→</span></button>
             <button class="secondary-button" data-action="howto">遊び方を見る</button>
           </div>
+          ${endingUnlocked ? endingAccessPanel(progress, "title") : ""}
         </div>
         <div class="title-cover__credit">
           <small>作成：やわらか図書館学</small>
@@ -74,6 +81,7 @@ export function caseSelectScreen(cases, progress) {
       <h1>ケースファイルを選ぶ</h1>
       <p>ケースは順番に解放されます。相手の言葉をよく聞き、質問を重ねて答えを見つけてください。</p>
     </section>
+    ${isEndingUnlocked(progress) ? endingAccessPanel(progress, "cases") : ""}
     <section class="case-grid" aria-label="ケース一覧">
       ${cases
         .map(({ data, unlocked }) => {
@@ -124,6 +132,18 @@ export function caseSelectScreen(cases, progress) {
       <div><span class="progress-panel__value">${String(completed).padStart(2, "0")}<small>/${String(cases.length).padStart(2, "0")}</small></span><span>COMPLETED CASES</span></div>
       <button class="text-button text-button--danger" data-action="reset-progress">進行状況をリセット</button>
     </section>`, { compact: true, volume: progress.volume });
+}
+
+function endingAccessPanel(progress, location) {
+  const unseen = progress.endingSeen !== true;
+  return `<section class="ending-access ending-access--${location} ${unseen ? "ending-access--new" : ""}" aria-label="エンディング${unseen ? "・未視聴" : "・再視聴"}">
+    <div class="ending-access__copy">
+      <p><span>ENDING</span>${unseen ? '<strong>NEW</strong>' : '<small>ARCHIVE</small>'}</p>
+      <h2>10 / 10 CASES <em>ALL 100</em></h2>
+      <span>すべての「本当の質問」を見つけました。</span>
+    </div>
+    <button class="primary-button" data-action="view-ending">エンディングを見る <span aria-hidden="true">→</span></button>
+  </section>`;
 }
 
 const defaultPresentation = Object.freeze({
@@ -371,7 +391,7 @@ function getPatronReaction(patron, total) {
   };
 }
 
-export function resultScreen(session, progress, hasNextCase) {
+export function resultScreen(session, progress, hasNextCase, options = {}) {
   const { caseData, state } = session;
   const presentation = getPresentation(caseData);
   const score = state.score;
@@ -416,11 +436,98 @@ export function resultScreen(session, progress, hasNextCase) {
         <figure class="result-player-portrait result-player-portrait--${reaction.level}" data-result-rank><img src="${escapeHtml(resultPlayerPortrait)}" alt="${escapeHtml(presentation.resultPlayerName)}が${reaction.expressionLabel}表情" /></figure>
       </div>
       <div class="result-actions" data-result-actions>
-        ${hasNextCase ? '<button class="primary-button primary-button--large" data-action="next-case" disabled>次のケースへ <span aria-hidden="true">→</span></button>' : '<button class="primary-button primary-button--large" data-action="cases" disabled>ケース一覧へ <span aria-hidden="true">→</span></button>'}
+        ${options.endingUnlockedNow ? '<button class="primary-button primary-button--large" data-action="view-ending" disabled>エンディングを見る <span aria-hidden="true">→</span></button>' : hasNextCase ? '<button class="primary-button primary-button--large" data-action="next-case" disabled>次のケースへ <span aria-hidden="true">→</span></button>' : '<button class="primary-button primary-button--large" data-action="cases" disabled>ケース一覧へ <span aria-hidden="true">→</span></button>'}
         <button class="secondary-button" data-action="replay" disabled>もう一度</button>
-        ${hasNextCase ? '<button class="text-button" data-action="cases" disabled>ケース一覧へ</button>' : ""}
+        ${(hasNextCase || options.endingUnlockedNow) ? '<button class="text-button" data-action="cases" disabled>ケース一覧へ</button>' : ""}
       </div>
+      ${options.endingUnlockedNow ? endingUnlockedDialog() : ""}
     </section>`, { compact: true, volume: progress.volume });
+}
+
+function endingUnlockedDialog() {
+  return `<dialog class="modal ending-unlocked-dialog" id="ending-unlocked-dialog" aria-labelledby="ending-unlocked-title">
+    <div class="modal__header"><span>ENDING UNLOCKED</span></div>
+    <div class="ending-unlocked-dialog__content">
+      <p class="eyebrow"><span></span> COMPLETE RECORD</p>
+      <h2 id="ending-unlocked-title">エンディングが解放されました</h2>
+      <p>CASE 01〜10 のBEST SCOREが<br />すべて100点になりました。</p>
+    </div>
+    <div class="modal__actions">
+      <button class="primary-button" data-action="view-ending">エンディングを見る <span aria-hidden="true">→</span></button>
+      <button class="secondary-button" data-action="ending-later">あとで見る</button>
+    </div>
+  </dialog>`;
+}
+
+function endingMessage(message, index) {
+  return `<article class="ending-message ending-message--${message.role}" style="--ending-message-index:${index}">
+    <span>${escapeHtml(message.speaker)}</span>
+    <p>「${escapeHtml(message.text)}」</p>
+  </article>`;
+}
+
+export function endingCompleteScreen(progress) {
+  return shell(`<section class="ending-screen ending-screen--record" aria-labelledby="ending-record-title">
+    <button class="ending-skip" data-action="exit-ending">SKIP <span aria-hidden="true">→</span></button>
+    <header class="ending-heading">
+      <p class="eyebrow"><span></span> ENDING</p>
+      <h1 id="ending-record-title">COMPLETE RECORD</h1>
+      <p>CASE 01〜10 / BEST SCORE</p>
+    </header>
+    <ol class="ending-record-list" aria-label="全ケースのベストスコア">
+      ${ENDING_REQUIRED_CASES.map((caseId, index) => `<li data-ending-record><span>CASE ${String(index + 1).padStart(2, "0")}</span><strong>${escapeHtml(progress.bestScores[caseId] ?? 0)}</strong></li>`).join("")}
+    </ol>
+    <section class="ending-record-summary" data-ending-record-summary aria-live="polite">
+      <small>COMPLETE RECORD</small><strong>10 / 10</strong><span>CASES</span><b>ALL 100</b>
+      <p>すべての「本当の質問」を<br />見つけました</p>
+    </section>
+  </section>`, { compact: true, header: false, volume: progress.volume });
+}
+
+export function endingDialogueScreen(progress, visibleCount) {
+  const messages = ENDING_DIALOGUE.beforeIllustration.slice(0, visibleCount);
+  return shell(`<section class="ending-screen ending-screen--night" data-ending-advance-area aria-labelledby="after-closing-title">
+    <button class="ending-skip" data-action="exit-ending">ケースファイルへ戻る</button>
+    <header class="ending-heading ending-heading--night">
+      <p class="eyebrow"><span></span> ENDING</p>
+      <h1 id="after-closing-title">AFTER CLOSING</h1>
+      <p>閉館後</p>
+    </header>
+    <section class="ending-dialogue" aria-label="閉館後の会話" aria-live="polite">
+      ${messages.map(endingMessage).join("")}
+    </section>
+    <button class="ending-next" data-action="advance-ending">次へ <span aria-hidden="true">→</span></button>
+  </section>`, { compact: true, header: false, volume: progress.volume });
+}
+
+export function endingIllustrationScreen(progress, visibleCount) {
+  const messages = ENDING_DIALOGUE.withIllustration.slice(0, visibleCount);
+  return shell(`<section class="ending-screen ending-screen--night ending-screen--illustration" data-ending-advance-area aria-labelledby="ending-illustration-title">
+    <button class="ending-skip ending-skip--on-image" data-action="exit-ending">ケースファイルへ戻る</button>
+    <h1 id="ending-illustration-title" class="sr-only">閉館後の司書さんと探偵さん</h1>
+    <figure class="ending-illustration">
+      <img src="./assets/characters/ending-illustration.webp" alt="閉館後の図書館で、司書さんと探偵さんが穏やかに話している" />
+      <figcaption>AFTER CLOSING <span>閉館後</span></figcaption>
+    </figure>
+    <section class="ending-illustration-dialogue" aria-label="閉館後の会話" aria-live="polite">
+      ${messages.length ? messages.map(endingMessage).join("") : '<p class="ending-illustration-prompt">二人の会話は、もう少し続きます。</p>'}
+    </section>
+    <button class="ending-next ending-next--on-image" data-action="advance-ending">${messages.length ? "次へ" : "会話を続ける"} <span aria-hidden="true">→</span></button>
+  </section>`, { compact: true, header: false, volume: progress.volume });
+}
+
+export function endingFinalScreen(progress) {
+  return shell(`<section class="ending-screen ending-screen--final" aria-labelledby="ending-final-title">
+    <img class="ending-final__image" src="./assets/characters/ending-illustration.webp" alt="閉館後の図書館で話す司書さんと探偵さん" />
+    <div class="ending-final__shade"></div>
+    <section class="ending-final__copy">
+      <p>THE REFERENCE INTERVIEW GAME</p>
+      <h1 id="ending-final-title">ほんとの質問</h1>
+      <strong>THANK YOU FOR PLAYING</strong>
+      <span>ENDING</span>
+      <button class="primary-button" data-action="exit-ending">ケースファイルへ戻る <span aria-hidden="true">→</span></button>
+    </section>
+  </section>`, { compact: true, header: false, volume: progress.volume });
 }
 
 export function howToDialog() {

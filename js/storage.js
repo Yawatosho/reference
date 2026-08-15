@@ -5,6 +5,8 @@ const DEFAULT_PROGRESS = Object.freeze({
   bestScores: {},
   variantHistory: {},
   volume: 1,
+  endingSeen: false,
+  endingUnlockedNoticed: false,
 });
 
 function normalizeScore(value) {
@@ -49,6 +51,8 @@ function normalizeProgress(value) {
     volume: Number.isFinite(value?.volume)
       ? Math.min(1, Math.max(0, value.volume))
       : 1,
+    endingSeen: value?.endingSeen === true,
+    endingUnlockedNoticed: value?.endingUnlockedNoticed === true,
   };
 }
 
@@ -111,6 +115,14 @@ export function recordVariant(
 
 export function setVolume(progress, volume, storage) {
   return saveProgress({ ...progress, volume }, storage);
+}
+
+export function markEndingSeen(progress, storage) {
+  return saveProgress({ ...progress, endingSeen: true }, storage);
+}
+
+export function markEndingUnlockedNoticed(progress, storage) {
+  return saveProgress({ ...progress, endingUnlockedNoticed: true }, storage);
 }
 
 export function isCaseUnlocked(cases, caseId, progress) {
