@@ -140,6 +140,7 @@ setAudioVolume(masterVolume);
 export function playScreenMusic(screen) {
   const nextTrack = SCREEN_MUSIC[screen];
   if (!nextTrack) return stopScreenMusic();
+  const shouldStartImmediately = requestedTrack === null || musicPlayer.paused;
   requestedTrack = nextTrack;
 
   const transitionId = ++musicTransitionId;
@@ -159,6 +160,11 @@ export function playScreenMusic(screen) {
     if (masterVolume <= 0) return;
     if (musicPlayer.paused) musicPlayer.play().catch(() => {});
     fadeMusicTo(1, MUSIC_FADE_IN_MS, transitionId);
+    return;
+  }
+
+  if (shouldStartImmediately) {
+    startTrack(nextTrack, transitionId);
     return;
   }
 

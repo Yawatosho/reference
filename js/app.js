@@ -8,7 +8,7 @@ import {
   startMessageSound,
   stopMessageSound,
   stopScreenMusic,
-} from "./audio.js?v=20260815-interaction1";
+} from "./audio.js?v=20260815-music-resume1";
 import {
   cutinDebugMarkup,
   getDebugCutin,
@@ -269,20 +269,7 @@ function moveConversationIntoViewOnMobile(conversation) {
     ? "auto"
     : "smooth";
   window.requestAnimationFrame(() => {
-    const margin = 12;
-    const rect = conversation.getBoundingClientRect();
-    const visibleHeight = window.innerHeight - margin * 2;
-    let scrollDelta = 0;
-
-    if (rect.height > visibleHeight || rect.top < margin) {
-      scrollDelta = rect.top - margin;
-    } else if (rect.bottom > window.innerHeight - margin) {
-      scrollDelta = rect.bottom - (window.innerHeight - margin);
-    }
-
-    if (Math.abs(scrollDelta) > 1) {
-      window.scrollBy({ top: scrollDelta, behavior });
-    }
+    conversation.scrollIntoView({ block: "start", behavior });
   });
 }
 
