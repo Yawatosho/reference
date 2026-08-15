@@ -30,6 +30,7 @@ let requestedTrack = null;
 let musicGain = 1;
 let musicFadeFrame = null;
 let musicTransitionId = 0;
+let musicStopInProgress = false;
 
 const MUSIC_VOLUME = 0.34;
 const MUSIC_FADE_OUT_MS = 400;
@@ -81,6 +82,7 @@ function fadeMusicTo(targetGain, duration, transitionId, onComplete) {
 
 function startTrack(nextTrack, transitionId) {
   if (transitionId !== musicTransitionId) return;
+  musicStopInProgress = false;
   musicPlayer.pause();
   musicPlayer.src = nextTrack;
   musicPlayer.currentTime = 0;
@@ -113,6 +115,7 @@ export function setAudioVolume(volume) {
     decisionPlayer.pause();
     choicePlayer.pause();
     if (!requestedTrack) {
+      musicStopInProgress = false;
       musicPlayer.removeAttribute("src");
       musicPlayer.load();
       activeTrack = null;
@@ -140,7 +143,9 @@ setAudioVolume(masterVolume);
 export function playScreenMusic(screen) {
   const nextTrack = SCREEN_MUSIC[screen];
   if (!nextTrack) return stopScreenMusic();
-  const shouldStartImmediately = requestedTrack === null || musicPlayer.paused;
+  const shouldStartImmediately =
+    musicStopInProgress || requestedTrack === null || musicPlayer.paused;
+  musicStopInProgress = false;
   requestedTrack = nextTrack;
 
   const transitionId = ++musicTransitionId;
@@ -156,15 +161,15 @@ export function playScreenMusic(screen) {
     return;
   }
 
+  if (shouldStartImmediately) {
+    startTrack(nextTrack, transitionId);
+    return;
+  }
+
   if (activeTrack === nextTrack) {
     if (masterVolume <= 0) return;
     if (musicPlayer.paused) musicPlayer.play().catch(() => {});
     fadeMusicTo(1, MUSIC_FADE_IN_MS, transitionId);
-    return;
-  }
-
-  if (shouldStartImmediately) {
-    startTrack(nextTrack, transitionId);
     return;
   }
 
@@ -180,6 +185,7 @@ export function playScreenMusic(screen) {
 }
 
 export function stopScreenMusic() {
+  if (musicStopInProgress) return;
   requestedTrack = null;
   const transitionId = ++musicTransitionId;
   cancelMusicFade();
@@ -188,17 +194,20 @@ export function stopScreenMusic() {
     musicPlayer.removeAttribute("src");
     musicPlayer.load();
     activeTrack = null;
+    musicStopInProgress = false;
     musicGain = 1;
     applyMusicVolume();
     return;
   }
 
+  musicStopInProgress = true;
   fadeMusicTo(0, MUSIC_FADE_OUT_MS, transitionId, () => {
     if (transitionId !== musicTransitionId) return;
     musicPlayer.pause();
     musicPlayer.removeAttribute("src");
     musicPlayer.load();
     activeTrack = null;
+    musicStopInProgress = false;
     musicGain = 1;
     applyMusicVolume();
   });

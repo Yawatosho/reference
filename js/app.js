@@ -8,7 +8,7 @@ import {
   startMessageSound,
   stopMessageSound,
   stopScreenMusic,
-} from "./audio.js?v=20260815-music-resume1";
+} from "./audio.js?v=20260815-music-restart1";
 import {
   cutinDebugMarkup,
   getDebugCutin,
