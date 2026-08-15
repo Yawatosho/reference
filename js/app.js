@@ -110,7 +110,7 @@ function renderCases() {
   trackPageView("cases", `ケースファイル｜${document.title}`);
 }
 
-function animateConversation(conversation) {
+function animateConversation(conversation, conversationView = null) {
   const recoveryNotice = document.querySelector("[data-recovery-notice]");
   const limitNotice = document.querySelector("[data-limit-notice]");
   const revealRecoveryNotice = () => {
@@ -168,6 +168,19 @@ function animateConversation(conversation) {
     message.hidden = true;
   });
 
+  const previousBottomOffset = Math.max(
+    0,
+    Number(conversationView?.bottomOffset ?? 0),
+  );
+  conversation.scrollTop = Math.max(
+    0,
+    conversation.scrollHeight - conversation.clientHeight - previousBottomOffset,
+  );
+
+  const scrollToLatestMessage = () => {
+    conversation.scrollTop = conversation.scrollHeight;
+  };
+
   let targetIndex = 0;
   let characterIndex = 0;
   let canSkipCurrent = false;
@@ -183,6 +196,7 @@ function animateConversation(conversation) {
     });
     activeTypingController = null;
     typingTimer = null;
+    window.requestAnimationFrame(scrollToLatestMessage);
   };
 
   const finishCurrentMessage = (skipped = false) => {
@@ -195,7 +209,7 @@ function animateConversation(conversation) {
 
     const target = targets[targetIndex];
     target.textContent = target.dataset.typingText ?? "";
-    conversation.scrollTop = conversation.scrollHeight;
+    scrollToLatestMessage();
     if (skipped || messages[targetIndex]?.dataset.messageLoop !== "false") {
       stopMessageSound();
     }
@@ -211,7 +225,7 @@ function animateConversation(conversation) {
       if (version !== renderVersion) return;
       messages[targetIndex].hidden = false;
       messages[targetIndex].classList.add("message--turn-enter");
-      conversation.scrollTop = conversation.scrollHeight;
+      scrollToLatestMessage();
       startCurrentMessage();
     }, 360);
     return true;
@@ -235,7 +249,7 @@ function animateConversation(conversation) {
     const characters = Array.from(target.dataset.typingText ?? "");
     characterIndex += 1;
     target.textContent = characters.slice(0, characterIndex).join("");
-    conversation.scrollTop = conversation.scrollHeight;
+    scrollToLatestMessage();
 
     if (characterIndex >= characters.length) return finishCurrentMessage();
 
@@ -255,7 +269,20 @@ function moveConversationIntoViewOnMobile(conversation) {
     ? "auto"
     : "smooth";
   window.requestAnimationFrame(() => {
-    conversation.scrollIntoView({ block: "start", behavior });
+    const margin = 12;
+    const rect = conversation.getBoundingClientRect();
+    const visibleHeight = window.innerHeight - margin * 2;
+    let scrollDelta = 0;
+
+    if (rect.height > visibleHeight || rect.top < margin) {
+      scrollDelta = rect.top - margin;
+    } else if (rect.bottom > window.innerHeight - margin) {
+      scrollDelta = rect.bottom - (window.innerHeight - margin);
+    }
+
+    if (Math.abs(scrollDelta) > 1) {
+      window.scrollBy({ top: scrollDelta, behavior });
+    }
   });
 }
 
@@ -263,6 +290,7 @@ function renderInterview(options = {}) {
   const {
     preserveScroll = false,
     moveToConversation = false,
+    conversationView = null,
     ...screenOptions
   } = options;
   mount(
@@ -277,7 +305,7 @@ function renderInterview(options = {}) {
   const conversation = document.querySelector("#conversation");
   if (conversation) {
     if (moveToConversation) moveConversationIntoViewOnMobile(conversation);
-    animateConversation(conversation);
+    animateConversation(conversation, conversationView);
   }
 }
 
@@ -534,6 +562,17 @@ function beginSelectedCase() {
 }
 
 function askSelectedQuestion(questionId) {
+  const previousConversation = document.querySelector("#conversation");
+  const conversationView = previousConversation
+    ? {
+        bottomOffset: Math.max(
+          0,
+          previousConversation.scrollHeight -
+            previousConversation.clientHeight -
+            previousConversation.scrollTop,
+        ),
+      }
+    : null;
   const typingFrom = session.state.conversation.length;
   const result = session.askQuestion(questionId);
   if (result.reachedLimit) {
@@ -542,6 +581,7 @@ function askSelectedQuestion(questionId) {
       typingFrom,
       preserveScroll: true,
       moveToConversation: true,
+      conversationView,
     });
     const limitButton =
       session.caseData.presentation?.limitButton ?? "回答をまとめる";
@@ -554,6 +594,7 @@ function askSelectedQuestion(questionId) {
     typingFrom,
     preserveScroll: true,
     moveToConversation: true,
+    conversationView,
   });
   const unlockedCopy = result.newlyUnlocked.length
     ? ` 新しい質問が${result.newlyUnlocked.length}件解放されました。`
