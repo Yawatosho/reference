@@ -21,11 +21,21 @@ export const ENDING_DIALOGUE = Object.freeze({
     Object.freeze({ speaker: "司書さん", role: "librarian", text: "たぶん、あるんだと思います。まだ、うまく言葉になっていないこともありますけど" }),
   ]),
   withIllustration: Object.freeze([
-    Object.freeze({ speaker: "探偵さん", role: "detective", text: "なるほどねー、じゃあ、見つけるのが司書さんの仕事なんだね" }),
+    Object.freeze({ speaker: "探偵さん", role: "detective", text: "なるほどねー、じゃあ、それを見つけるのが司書さんの仕事なんだね" }),
     Object.freeze({ speaker: "司書さん", role: "librarian", text: "一緒に見つける、でしょうか" }),
-    Object.freeze({ speaker: "探偵さん", role: "detective", text: "ふふ。司書さんらしい" }),
+    Object.freeze({
+      speaker: "探偵さん",
+      role: "detective",
+      text: "ふふ。司書さんらしい",
+      portrait: "./assets/characters/extra-detective-reaction-high-portrait.webp",
+    }),
   ]),
 });
+
+export const ENDING_DIALOGUE_LINES = Object.freeze([
+  ...ENDING_DIALOGUE.beforeIllustration,
+  ...ENDING_DIALOGUE.withIllustration,
+]);
 
 export function isEndingUnlocked(progress) {
   return ENDING_REQUIRED_CASES.every(

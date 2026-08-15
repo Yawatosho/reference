@@ -18,9 +18,9 @@ import {
 } from "./cutin.js?v=20260812-timing1";
 import { trackPageView } from "./analytics.js?v=20260812-analytics1";
 import {
-  ENDING_DIALOGUE,
+  ENDING_DIALOGUE_LINES,
   isEndingUnlocked,
-} from "./ending.js?v=20260815-ending1";
+} from "./ending.js?v=20260815-ending-simple2";
 import { GameSession } from "./game.js?v=20260812-recoveryrandom1";
 import {
   clearProgress,
@@ -38,15 +38,12 @@ import {
   caseSelectScreen,
   confirmDialog,
   deductionScreen,
-  endingCompleteScreen,
-  endingDialogueScreen,
-  endingFinalScreen,
   endingIllustrationScreen,
   howToDialog,
   interviewScreen,
   resultScreen,
   topScreen,
-} from "./ui.js?v=20260815-ending1";
+} from "./ui.js?v=20260815-ending-simple4";
 
 const app = document.querySelector("#app");
 const liveRegion = document.querySelector("#live-region");
@@ -58,11 +55,12 @@ let session = null;
 const lastVariantIds = new Map();
 let typingTimer = null;
 let activeTypingController = null;
+let endingTypingTimer = null;
+let endingTypingController = null;
 let questionFeedbackTimer = null;
 let resultRevealController = null;
 let resultRevealFrame = null;
 const resultRevealTimers = new Set();
-const endingTimers = new Set();
 let renderVersion = 0;
 let endingState = null;
 let endingUnlockPending = false;
@@ -86,16 +84,20 @@ function mount(markup, { focus = true, preserveScroll = false } = {}) {
   renderVersion += 1;
   stopMessageSound();
   activeTypingController = null;
+  endingTypingController = null;
   if (typingTimer !== null) {
     window.clearTimeout(typingTimer);
     typingTimer = null;
+  }
+  if (endingTypingTimer !== null) {
+    window.clearTimeout(endingTypingTimer);
+    endingTypingTimer = null;
   }
   if (questionFeedbackTimer !== null) {
     window.clearTimeout(questionFeedbackTimer);
     questionFeedbackTimer = null;
   }
   cancelResultReveal();
-  cancelEndingTimers();
   app.innerHTML = `${markup}${howToDialog()}${confirmDialog()}${answerChoiceDialog()}${cutinDebugMarkup()}`;
   if (focus) app.focus({ preventScroll: true });
   window.scrollTo({
@@ -349,102 +351,141 @@ function showEndingUnlockedNotice() {
   announce("エンディングが解放されました。CASE 01から10のベストスコアが、すべて100点になりました。");
 }
 
-function scheduleEndingStep(callback, delay) {
-  const timer = window.setTimeout(() => {
-    endingTimers.delete(timer);
-    callback();
-  }, delay);
-  endingTimers.add(timer);
+function typeEndingMessage(message) {
+  const text = document.querySelector("[data-ending-text]");
+  if (!text) return;
+  const fullText = `「${message.text}」`;
+  if (endingTypingTimer !== null) {
+    window.clearTimeout(endingTypingTimer);
+    endingTypingTimer = null;
+  }
+  stopMessageSound();
+
+  const finish = () => {
+    if (endingTypingTimer !== null) {
+      window.clearTimeout(endingTypingTimer);
+      endingTypingTimer = null;
+    }
+    text.textContent = fullText;
+    stopMessageSound();
+    endingTypingController = null;
+    if (endingState) endingState.typing = false;
+    return true;
+  };
+
+  if (prefersReducedMotion()) {
+    finish();
+    return;
+  }
+
+  const characters = Array.from(fullText);
+  let characterIndex = 0;
+  text.textContent = "";
+  if (endingState) endingState.typing = true;
+  endingTypingController = { skipCurrent: finish };
+  startMessageSound(message.role === "detective" ? "message3" : "message2");
+
+  const typeNextCharacter = () => {
+    characterIndex += 1;
+    text.textContent = characters.slice(0, characterIndex).join("");
+    if (characterIndex >= characters.length) {
+      finish();
+      return;
+    }
+    endingTypingTimer = window.setTimeout(typeNextCharacter, 24);
+  };
+  endingTypingTimer = window.setTimeout(typeNextCharacter, 100);
 }
 
-function cancelEndingTimers() {
-  endingTimers.forEach((timer) => window.clearTimeout(timer));
-  endingTimers.clear();
-}
-
-function renderEndingComplete() {
+function renderEnding(dialogueIndex = 0) {
   if (!isEndingUnlocked(progress)) return renderCases();
   endingUnlockPending = false;
-  endingState = { phase: "record" };
   currentCase = null;
   session = null;
-  mount(endingCompleteScreen(progress));
+  const lastIndex = ENDING_DIALOGUE_LINES.length - 1;
+  const safeIndex = Math.min(Math.max(dialogueIndex, 0), lastIndex);
+  endingState = { phase: "illustration", dialogueIndex: safeIndex, complete: false };
+  mount(endingIllustrationScreen(progress, safeIndex, false));
   playScreenMusic("ending");
-  trackPageView("ending/complete-record", `COMPLETE RECORD｜${document.title}`);
+  trackPageView("ending", `閉館後の会話｜${document.title}`);
+  const message = ENDING_DIALOGUE_LINES[safeIndex];
+  announce(`${message.speaker}、${message.text}`);
+  typeEndingMessage(message);
+}
 
-  const records = [...document.querySelectorAll("[data-ending-record]")];
-  const summary = document.querySelector("[data-ending-record-summary]");
-  const reduced = prefersReducedMotion();
-  const interval = reduced ? 12 : 120;
-  const initialDelay = reduced ? 10 : 180;
-  records.forEach((record, index) => {
-    scheduleEndingStep(
-      () => record.setAttribute("data-confirmed", "true"),
-      initialDelay + index * interval,
-    );
-  });
-  const summaryDelay =
-    initialDelay + records.length * interval + (reduced ? 20 : 280);
-  scheduleEndingStep(() => {
-    summary?.setAttribute("data-revealed", "true");
-    announce(
-      "10ケースすべて、ベストスコア100点。すべての本当の質問を見つけました。",
-    );
-  }, summaryDelay);
-  scheduleEndingStep(
-    () => renderEndingDialogue(1),
-    summaryDelay + (reduced ? 280 : 1500),
+function showEndingLine(dialogueIndex) {
+  if (!endingState) return;
+  const lastIndex = ENDING_DIALOGUE_LINES.length - 1;
+  const safeIndex = Math.min(Math.max(dialogueIndex, 0), lastIndex);
+  const message = ENDING_DIALOGUE_LINES[safeIndex];
+  const screen = document.querySelector(".ending-screen--illustration");
+  const dialogue = document.querySelector("[data-ending-dialogue]");
+  const portrait = document.querySelector("[data-ending-portrait]");
+  const speaker = document.querySelector("[data-ending-speaker]");
+  if (!screen || !dialogue || !portrait || !speaker) return;
+
+  dialogue.classList.remove(
+    "ending-illustration-dialogue--detective",
+    "ending-illustration-dialogue--librarian",
   );
+  dialogue.classList.add(`ending-illustration-dialogue--${message.role}`);
+  portrait.src = message.portrait ?? (message.role === "detective"
+    ? "./assets/characters/extra-detective-reaction-medium-portrait.webp"
+    : "./assets/characters/extra-librarian-portrait.webp");
+  speaker.textContent = message.speaker;
+  endingState = {
+    phase: "illustration",
+    dialogueIndex: safeIndex,
+    complete: false,
+    typing: false,
+  };
+  announce(`${message.speaker}、${message.text}`);
+  typeEndingMessage(message);
 }
 
-function renderEndingDialogue(visibleCount) {
-  endingState = { phase: "dialogue", visibleCount };
-  mount(endingDialogueScreen(progress, visibleCount));
-  playScreenMusic("ending");
-  trackPageView("ending/dialogue", `閉館後｜${document.title}`);
-  const message = ENDING_DIALOGUE.beforeIllustration[visibleCount - 1];
-  if (message) announce(`${message.speaker}、${message.text}`);
-}
+function showEndingCredits() {
+  const screen = document.querySelector(".ending-screen--illustration");
+  const dialogue = document.querySelector("[data-ending-dialogue]");
+  const credits = document.querySelector("[data-ending-credits]");
+  const roll = document.querySelector("[data-ending-credits-roll]");
+  const thanks = document.querySelector("[data-ending-credits-thanks]");
+  const exit = document.querySelector("[data-ending-credits-exit]");
+  if (!screen || !dialogue || !credits || !roll || !thanks || !exit) return;
 
-function renderEndingIllustration(visibleCount = 0) {
-  endingState = { phase: "illustration", visibleCount };
-  mount(endingIllustrationScreen(progress, visibleCount));
-  playScreenMusic("ending");
-  trackPageView("ending/illustration", `閉館後の会話｜${document.title}`);
-  const message = ENDING_DIALOGUE.withIllustration[visibleCount - 1];
-  announce(
-    message
-      ? `${message.speaker}、${message.text}`
-      : "閉館後の図書館で、二人の会話が続きます。",
-  );
-}
+  endingState = {
+    phase: "credits",
+    dialogueIndex: ENDING_DIALOGUE_LINES.length - 1,
+    complete: true,
+  };
+  screen.removeAttribute("data-ending-advance-area");
+  dialogue.hidden = true;
+  stopMessageSound();
+  credits.hidden = false;
+  trackPageView("ending/credits", `スタッフロール｜${document.title}`);
+  announce("スタッフロール。Illustration ChatGPT、Programming Codex、BGM Suno、効果音 効果音ラボ、Produce やわらか図書館学。");
 
-function renderEndingFinal() {
-  progress = markEndingSeen(progress);
-  endingState = { phase: "final" };
-  mount(endingFinalScreen(progress));
-  playScreenMusic("ending");
-  trackPageView("ending/final", `THANK YOU FOR PLAYING｜${document.title}`);
-  announce("THANK YOU FOR PLAYING。エンディングを最後まで視聴しました。");
+  const finishCredits = () => {
+    credits.dataset.complete = "true";
+    roll.hidden = true;
+    thanks.hidden = false;
+    exit.hidden = false;
+    if (progress.endingSeen !== true) progress = markEndingSeen(progress);
+    announce("Thank you for Playing! エンディングを最後まで視聴しました。");
+  };
+  if (prefersReducedMotion()) {
+    finishCredits();
+  } else {
+    roll.addEventListener("animationend", finishCredits, { once: true });
+  }
 }
 
 function advanceEnding() {
-  if (!endingState) return;
-  if (endingState.phase === "dialogue") {
-    if (endingState.visibleCount < ENDING_DIALOGUE.beforeIllustration.length) {
-      renderEndingDialogue(endingState.visibleCount + 1);
-      return;
-    }
-    renderEndingIllustration(0);
+  if (!endingState || endingState.complete) return;
+  if (endingState.dialogueIndex >= ENDING_DIALOGUE_LINES.length - 1) {
+    showEndingCredits();
     return;
   }
-  if (endingState.phase === "illustration") {
-    if (endingState.visibleCount < ENDING_DIALOGUE.withIllustration.length) {
-      renderEndingIllustration(endingState.visibleCount + 1);
-      return;
-    }
-    renderEndingFinal();
-  }
+  showEndingLine(endingState.dialogueIndex + 1);
 }
 
 function scheduleResultStep(callback, delay) {
@@ -791,6 +832,10 @@ app.addEventListener("click", (event) => {
     event.target.closest("[data-ending-advance-area]") &&
     !event.target.closest("button, a, input, select, textarea, [contenteditable='true']")
   ) {
+    if (endingTypingController?.skipCurrent()) {
+      event.preventDefault();
+      return;
+    }
     advanceEnding();
     return;
   }
@@ -806,7 +851,7 @@ app.addEventListener("click", (event) => {
   if (action === "close-dialog") return closeDialog(button);
   if (action === "view-ending") {
     button.closest("dialog")?.close();
-    return renderEndingComplete();
+    return renderEnding(0);
   }
   if (action === "ending-later") {
     button.closest("dialog")?.close();
@@ -930,11 +975,9 @@ document.addEventListener("keydown", (event) => {
     return;
   }
 
-  if (
-    endingState &&
-    ["dialogue", "illustration"].includes(endingState.phase)
-  ) {
+  if (endingState && !endingState.complete) {
     event.preventDefault();
+    if (endingTypingController?.skipCurrent()) return;
     advanceEnding();
     return;
   }

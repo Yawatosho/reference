@@ -1,9 +1,8 @@
 import { GAME_CONFIG } from "../data/cases.js?v=20260812-sourceclarity1";
 import {
-  ENDING_DIALOGUE,
-  ENDING_REQUIRED_CASES,
+  ENDING_DIALOGUE_LINES,
   isEndingUnlocked,
-} from "./ending.js?v=20260815-ending1";
+} from "./ending.js?v=20260815-ending-simple2";
 
 const escapeMap = {
   "&": "&amp;",
@@ -42,7 +41,6 @@ export function shell(content, options = {}) {
 }
 
 export function topScreen(progress) {
-  const endingUnlocked = isEndingUnlocked(progress);
   return shell(`
     <section class="title-cover" aria-labelledby="hero-title">
       <img class="title-cover__image" src="./assets/characters/title.png" alt="図書館のカウンターでメモを取る司書さん" decoding="async" fetchpriority="high" />
@@ -59,7 +57,6 @@ export function topScreen(progress) {
             <button class="primary-button primary-button--large" data-action="cases">インタビューを始める <span aria-hidden="true">→</span></button>
             <button class="secondary-button" data-action="howto">遊び方を見る</button>
           </div>
-          ${endingUnlocked ? endingAccessPanel(progress, "title") : ""}
         </div>
         <div class="title-cover__credit">
           <small>作成：やわらか図書館学</small>
@@ -459,73 +456,37 @@ function endingUnlockedDialog() {
   </dialog>`;
 }
 
-function endingMessage(message, index) {
-  return `<article class="ending-message ending-message--${message.role}" style="--ending-message-index:${index}">
-    <span>${escapeHtml(message.speaker)}</span>
-    <p>「${escapeHtml(message.text)}」</p>
-  </article>`;
-}
-
-export function endingCompleteScreen(progress) {
-  return shell(`<section class="ending-screen ending-screen--record" aria-labelledby="ending-record-title">
-    <button class="ending-skip" data-action="exit-ending">SKIP <span aria-hidden="true">→</span></button>
-    <header class="ending-heading">
-      <p class="eyebrow"><span></span> ENDING</p>
-      <h1 id="ending-record-title">COMPLETE RECORD</h1>
-      <p>CASE 01〜10 / BEST SCORE</p>
-    </header>
-    <ol class="ending-record-list" aria-label="全ケースのベストスコア">
-      ${ENDING_REQUIRED_CASES.map((caseId, index) => `<li data-ending-record><span>CASE ${String(index + 1).padStart(2, "0")}</span><strong>${escapeHtml(progress.bestScores[caseId] ?? 0)}</strong></li>`).join("")}
-    </ol>
-    <section class="ending-record-summary" data-ending-record-summary aria-live="polite">
-      <small>COMPLETE RECORD</small><strong>10 / 10</strong><span>CASES</span><b>ALL 100</b>
-      <p>すべての「本当の質問」を<br />見つけました</p>
-    </section>
-  </section>`, { compact: true, header: false, volume: progress.volume });
-}
-
-export function endingDialogueScreen(progress, visibleCount) {
-  const messages = ENDING_DIALOGUE.beforeIllustration.slice(0, visibleCount);
-  return shell(`<section class="ending-screen ending-screen--night" data-ending-advance-area aria-labelledby="after-closing-title">
-    <button class="ending-skip" data-action="exit-ending">ケースファイルへ戻る</button>
-    <header class="ending-heading ending-heading--night">
-      <p class="eyebrow"><span></span> ENDING</p>
-      <h1 id="after-closing-title">AFTER CLOSING</h1>
-      <p>閉館後</p>
-    </header>
-    <section class="ending-dialogue" aria-label="閉館後の会話" aria-live="polite">
-      ${messages.map(endingMessage).join("")}
-    </section>
-    <button class="ending-next" data-action="advance-ending">次へ <span aria-hidden="true">→</span></button>
-  </section>`, { compact: true, header: false, volume: progress.volume });
-}
-
-export function endingIllustrationScreen(progress, visibleCount) {
-  const messages = ENDING_DIALOGUE.withIllustration.slice(0, visibleCount);
-  return shell(`<section class="ending-screen ending-screen--night ending-screen--illustration" data-ending-advance-area aria-labelledby="ending-illustration-title">
+export function endingIllustrationScreen(progress, dialogueIndex, isComplete) {
+  const message = ENDING_DIALOGUE_LINES[dialogueIndex] ?? ENDING_DIALOGUE_LINES[0];
+  const portrait = message.portrait ?? (message.role === "detective"
+    ? "./assets/characters/extra-detective-reaction-medium-portrait.webp"
+    : "./assets/characters/extra-librarian-portrait.webp");
+  return shell(`<section class="ending-screen ending-screen--illustration" ${isComplete ? "" : "data-ending-advance-area"} aria-labelledby="ending-illustration-title">
     <button class="ending-skip ending-skip--on-image" data-action="exit-ending">ケースファイルへ戻る</button>
     <h1 id="ending-illustration-title" class="sr-only">閉館後の司書さんと探偵さん</h1>
     <figure class="ending-illustration">
-      <img src="./assets/characters/ending-illustration.webp" alt="閉館後の図書館で、司書さんと探偵さんが穏やかに話している" />
-      <figcaption>AFTER CLOSING <span>閉館後</span></figcaption>
+      <picture>
+        <source media="(max-width: 760px)" srcset="./assets/characters/ending-illustration_tate.webp" />
+        <img src="./assets/characters/ending-illustration.webp" alt="閉館後の図書館で、司書さんと探偵さんが穏やかに話している" />
+      </picture>
     </figure>
-    <section class="ending-illustration-dialogue" aria-label="閉館後の会話" aria-live="polite">
-      ${messages.length ? messages.map(endingMessage).join("") : '<p class="ending-illustration-prompt">二人の会話は、もう少し続きます。</p>'}
+    <section class="ending-illustration-dialogue ending-illustration-dialogue--${message.role}" data-ending-dialogue aria-label="閉館後の会話" aria-live="polite">
+      <img class="ending-dialogue-portrait" data-ending-portrait src="${portrait}" alt="" />
+      <div class="ending-dialogue-copy">
+        <span class="ending-dialogue-speaker" data-ending-speaker>${escapeHtml(message.speaker)}</span>
+        <p data-ending-text>「${escapeHtml(message.text)}」</p>
+      </div>
     </section>
-    <button class="ending-next ending-next--on-image" data-action="advance-ending">${messages.length ? "次へ" : "会話を続ける"} <span aria-hidden="true">→</span></button>
-  </section>`, { compact: true, header: false, volume: progress.volume });
-}
-
-export function endingFinalScreen(progress) {
-  return shell(`<section class="ending-screen ending-screen--final" aria-labelledby="ending-final-title">
-    <img class="ending-final__image" src="./assets/characters/ending-illustration.webp" alt="閉館後の図書館で話す司書さんと探偵さん" />
-    <div class="ending-final__shade"></div>
-    <section class="ending-final__copy">
-      <p>THE REFERENCE INTERVIEW GAME</p>
-      <h1 id="ending-final-title">ほんとの質問</h1>
-      <strong>THANK YOU FOR PLAYING</strong>
-      <span>ENDING</span>
-      <button class="primary-button" data-action="exit-ending">ケースファイルへ戻る <span aria-hidden="true">→</span></button>
+    <section class="ending-credits" data-ending-credits aria-label="スタッフロール" aria-live="polite" hidden>
+      <div class="ending-credits__roll" data-ending-credits-roll>
+        <p><span>Illustration</span><strong>ChatGPT</strong></p>
+        <p><span>Programming</span><strong>Codex</strong></p>
+        <p><span>BGM</span><strong>Suno</strong></p>
+        <p><span>効果音</span><strong>効果音ラボ</strong></p>
+        <p><span>Produce</span><strong>やわらか図書館学</strong></p>
+      </div>
+      <h2 class="ending-credits__thanks" data-ending-credits-thanks hidden>Thank you for Playing!</h2>
+      <button class="ending-credits__exit" data-ending-credits-exit data-action="exit-ending" hidden>ケースファイルへ戻る <span aria-hidden="true">→</span></button>
     </section>
   </section>`, { compact: true, header: false, volume: progress.volume });
 }
