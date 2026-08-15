@@ -2477,6 +2477,8 @@ body {
 
 /* Staged result reveal */
 .result-page--revealing [data-result-segment],
+.result-page--revealing [data-result-patron],
+.result-page--revealing [data-result-rank-panel],
 .result-page--revealing [data-result-total],
 .result-page--revealing [data-result-rank] {
   opacity: 0;
@@ -2485,6 +2487,8 @@ body {
 }
 
 .result-page--revealing [data-result-segment][data-revealed="true"],
+.result-page--revealing [data-result-patron][data-revealed="true"],
+.result-page--revealing [data-result-rank-panel][data-revealed="true"],
 .result-page--revealing [data-result-total][data-revealed="true"],
 .result-page--revealing [data-result-rank][data-revealed="true"] {
   opacity: 1;
@@ -2499,6 +2503,14 @@ body {
 
 .result-page--revealed [data-result-actions] {
   opacity: 1;
+}
+
+.result-page > .result-grid:first-child {
+  margin-top: 0;
+}
+
+.patron-reaction + .result-hero {
+  margin-top: 20px;
 }
 
 .result-page--revealing .rank-badge[data-revealed="true"] {

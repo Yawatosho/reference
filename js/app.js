@@ -36,7 +36,7 @@ import {
   interviewScreen,
   resultScreen,
   topScreen,
-} from "./ui.js?v=20260815-interaction1";
+} from "./ui.js?v=20260815-result-order1";
 
 const app = document.querySelector("#app");
 const liveRegion = document.querySelector("#live-region");
@@ -341,6 +341,8 @@ function startResultReveal(onComplete) {
   const root = document.querySelector("[data-result-reveal]");
   if (!root) return;
   const segments = [...root.querySelectorAll("[data-result-segment]")];
+  const patronParts = [...root.querySelectorAll("[data-result-patron]")];
+  const rankPanels = [...root.querySelectorAll("[data-result-rank-panel]")];
   const totalParts = [...root.querySelectorAll("[data-result-total]")];
   const rankParts = [...root.querySelectorAll("[data-result-rank]")];
   const actions = root.querySelector("[data-result-actions]");
@@ -353,6 +355,8 @@ function startResultReveal(onComplete) {
   root.classList.add("result-page--revealing");
   root.setAttribute("aria-busy", "true");
   segments.forEach((item) => item.removeAttribute("data-revealed"));
+  patronParts.forEach((item) => item.removeAttribute("data-revealed"));
+  rankPanels.forEach((item) => item.removeAttribute("data-revealed"));
   totalParts.forEach((item) => item.removeAttribute("data-revealed"));
   rankParts.forEach((item) => item.removeAttribute("data-revealed"));
   actionButtons.forEach((button) => {
@@ -370,6 +374,8 @@ function startResultReveal(onComplete) {
       resultRevealFrame = null;
     }
     segments.forEach((item) => item.setAttribute("data-revealed", "true"));
+    patronParts.forEach((item) => item.setAttribute("data-revealed", "true"));
+    rankPanels.forEach((item) => item.setAttribute("data-revealed", "true"));
     totalParts.forEach((item) => item.setAttribute("data-revealed", "true"));
     rankParts.forEach((item) => item.setAttribute("data-revealed", "true"));
     if (scoreElement) scoreElement.textContent = String(finalScore);
@@ -398,8 +404,14 @@ function startResultReveal(onComplete) {
     );
   });
 
-  const totalDelay = initialDelay + segments.length * segmentInterval;
+  const patronDelay = initialDelay + segments.length * segmentInterval;
   scheduleResultStep(() => {
+    patronParts.forEach((item) => item.setAttribute("data-revealed", "true"));
+  }, patronDelay);
+
+  const rankDelay = patronDelay + 340;
+  scheduleResultStep(() => {
+    rankPanels.forEach((item) => item.setAttribute("data-revealed", "true"));
     totalParts.forEach((item) => item.setAttribute("data-revealed", "true"));
     const startedAt = performance.now();
     const countDuration = 650;
@@ -421,7 +433,7 @@ function startResultReveal(onComplete) {
       scheduleResultStep(finish, 320);
     };
     resultRevealFrame = window.requestAnimationFrame(countScore);
-  }, totalDelay);
+  }, rankDelay);
 }
 
 function openDialog(id) {
