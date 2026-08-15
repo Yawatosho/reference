@@ -494,12 +494,12 @@ export function createAdditionalCases(maxQuestions) {
         },
         {
           id: "q07_use",
-          text: "Who will use or listen to your explanation?",
+          text: "What are you planning to use the information for?",
           requiresAll: [],
           requiresAny: [],
-          response: "People who are curious about Japanese culture but have never used the object.",
-          responseVariants: ["People who are new to this part of Japanese culture. I want the explanation to be easy to follow."],
-          reveals: ["audience_context"],
+          response: "I am preparing a short presentation for my international exchange club.",
+          responseVariants: ["It is for a small talk at my international exchange club next week."],
+          reveals: ["purpose"],
         },
         {
           id: "q07_goal",
@@ -513,7 +513,7 @@ export function createAdditionalCases(maxQuestions) {
         {
           id: "q07_language",
           text: "Do you need a source you can read in English?",
-          requiresAll: ["purpose"],
+          requiresAll: [],
           requiresAny: [],
           response: "Yes, an English introduction would help me avoid a heroic battle with a dictionary.",
           responseVariants: ["Yes, please. English would be best, though a bilingual book could also work."],
@@ -540,11 +540,11 @@ export function createAdditionalCases(maxQuestions) {
         {
           id: "q07_deadline",
           text: "When do you need the information?",
-          requiresAll: ["audience_context"],
+          requiresAll: ["purpose"],
           requiresAny: [],
           response: "By the end of this week. My international exchange club presentation is coming soon.",
           responseVariants: ["This week, if possible. I need the club presentation ready before our next meeting."],
-          reveals: ["deadline", "purpose"],
+          reveals: ["deadline"],
         },
         {
           id: "q07_plausible",
@@ -768,12 +768,12 @@ export function createAdditionalCases(maxQuestions) {
           q07_use: {
             responses: [
               {
-                text: "People who are curious about Japanese culture but have never used the object.",
-                reveals: ["audience_context"],
+                text: "{foreignUseReply}",
+                reveals: ["purpose"],
               },
               {
-                text: "People who are new to this part of Japanese culture. I want the explanation to be easy to follow.",
-                reveals: ["audience_context"],
+                text: "{foreignUseReplyAlt}",
+                reveals: ["purpose"],
               },
             ],
           },
@@ -786,7 +786,7 @@ export function createAdditionalCases(maxQuestions) {
           q07_language: { responses: ["{foreignLanguageReply}", "{foreignLanguageReplyAlt}"] },
           q07_visual: {
             responses: [
-              { text: "{foreignVisualReply}", reveals: ["visual_need", "language"] },
+              { text: "{foreignVisualReply}", reveals: ["visual_need"] },
               { text: "Yes. A visual source would make the explanation much clearer.", reveals: ["visual_need"] },
             ],
           },
@@ -795,8 +795,8 @@ export function createAdditionalCases(maxQuestions) {
           },
           q07_deadline: {
             responses: [
-              { text: "{foreignDeadlineReply}", reveals: ["deadline", "purpose"] },
-              { text: "{foreignDeadlineReplyAlt}", reveals: ["deadline", "purpose"] },
+              { text: "{foreignDeadlineReply}", reveals: ["deadline"] },
+              { text: "{foreignDeadlineReplyAlt}", reveals: ["deadline"] },
             ],
           },
         },
