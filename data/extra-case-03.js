@@ -168,7 +168,7 @@ const EXTRA_CASE_03_SOURCE = [
     {
       id: "q_ex3a_material",
       text:
-        "どんな資料を登録しようとしているんですか？",
+        "今回は、どのような資料を登録される予定ですか？",
 
       requiresAll: [],
       requiresAny: [],
@@ -204,7 +204,7 @@ const EXTRA_CASE_03_SOURCE = [
     {
       id: "q_ex3a_why_mapping",
       text:
-        "どうしてマッピングを変更する必要があると思ったんですか？",
+        "マッピングについて確認しておこうと思われたのは、何かきっかけがあったんですか？",
 
       requiresAll: [],
       requiresAny: [],
@@ -222,7 +222,7 @@ const EXTRA_CASE_03_SOURCE = [
     {
       id: "q_ex3a_item_type",
       text:
-        "今は、どのアイテムタイプを使おうとしていますか？",
+        "今のところ、どのアイテムタイプを使う予定ですか？",
 
       requiresAll: [],
       requiresAny: ["journal_article"],
@@ -244,7 +244,7 @@ const EXTRA_CASE_03_SOURCE = [
     {
       id: "q_ex3a_metadata",
       text:
-        "登録したいのは、具体的にどんな情報ですか？",
+        "論文について、どのような情報を登録したいとお考えですか？",
 
       requiresAll: ["journal_article"],
       requiresAny: [],
@@ -262,7 +262,7 @@ const EXTRA_CASE_03_SOURCE = [
     {
       id: "q_ex3a_missing_fields",
       text:
-        "標準アイテムタイプを見たとき、登録したいのに項目が見つからない情報はありましたか？",
+        "標準アイテムタイプの項目で、登録したい情報はひととおり入りそうですか？",
 
       requiresAll: [
         "standard_item_type",
@@ -271,12 +271,12 @@ const EXTRA_CASE_03_SOURCE = [
 
       requiresAny: [],
 
-      response:
-        "……改めて見ると、なさそうですね。必要だと思っていた項目は全部あります。",
+response:
+  "そうですね……改めて確認してみると、必要だと思っていた情報はひととおり登録できそうです。",
 
-      responseVariants: [
-        "特にないですね。タイトルも著者も書誌情報も入れられそうです。",
-      ],
+responseVariants: [
+  "はい。タイトルや著者、書誌情報など、今回必要な項目はそろっていそうです。",
+],
 
       reveals: ["fields_sufficient"],
     },
@@ -328,7 +328,7 @@ const EXTRA_CASE_03_SOURCE = [
     {
       id: "q_ex3a_hypothesis",
       text:
-        "独自の項目を追加したいわけではなく、標準アイテムタイプで必要な情報が登録できるなら、マッピングを変更せずそのまま使ってよいのかを確認したい、ということでしょうか？",
+        "ここまで伺ったところでは、標準アイテムタイプで必要な情報は登録できそうですね。今回は、マッピングを変更せず標準の設定を使ってよいかを確認したい、ということでしょうか？",
 
       requiresAll: [
         "mapping_assumption",
@@ -395,45 +395,44 @@ const EXTRA_CASE_03_SOURCE = [
     // 雑談
     // ============================================================
 
-    {
-      id: "q_ex3a_irrelevant",
-      text:
-        "リポジトリ担当になって、どのくらいなんですか？",
+{
+  id: "q_ex3a_irrelevant",
+  text:
+    "ところで、今日はそちらの図書館、落ち着いていますか？",
 
-      requiresAll: [],
-      requiresAny: [],
+  requiresAll: [],
+  requiresAny: [],
 
-      response:
-        "まだ数か月です。前の担当者から引き継いだんですが、知らない言葉が次々出てきて……。",
-        
-      responseVariants: [
-        "この春からです。登録自体は少し分かってきましたけど、設定画面はまだちょっと怖いですね。",
-      ],
+  response:
+    "今日は比較的落ち着いています。午後になると、もう少し利用者が増えてきそうですけど。",
 
-      reveals: ["smalltalk_followup"],
-      distractor: "irrelevant",
-      distractorTone: "cheerful",
-    },
-
-    {
-      id: "q_ex3a_smalltalk_followup",
-      text:
-        "設定画面って、ちょっと緊張しますよね。",
-
-      requiresAll: ["smalltalk_followup"],
-      requiresAny: [],
-
-      response:
-        "します。『保存』を押した瞬間に大学中のデータが全部変わったらどうしよう、とか考えちゃって。たぶんそんなことないんですけど。",
-
-      responseVariants: [
-        "分かってもらえます？ 触らなくていいものまで触ってしまいそうで、つい慎重になります。",
-      ],
-
-      reveals: [],
-      smallTalkFollowUp: true,
-    },
+  responseVariants: [
+    "今のところは静かですね。このあと少し忙しくなるかもしれません。",
   ],
+
+  reveals: ["smalltalk_followup"],
+  distractor: "irrelevant",
+  distractorTone: "cheerful",
+},
+
+{
+  id: "q_ex3a_smalltalk_followup",
+  text:
+    "忙しくなる前に、少しひと息つけそうですね。",
+
+  requiresAll: ["smalltalk_followup"],
+  requiresAny: [],
+
+  response:
+    "そうですね。戻ったらコーヒーでも飲んでから、午後の仕事を始めようかなと思います。",
+
+  responseVariants: [
+    "はい。ちょうどいいタイミングなので、戻ったら少し休憩しようと思います。",
+  ],
+
+  reveals: [],
+  smallTalkFollowUp: true,
+},
 
   deduction: {
     template:
@@ -782,7 +781,7 @@ const EXTRA_CASE_03_SOURCE = [
     {
       id: "q_ex3b_material",
       text:
-        "今回は、何を登録しようとしているんですか？",
+        "今回は、どのようなものを登録される予定ですか？",
 
       requiresAll: [],
       requiresAny: [],
@@ -818,7 +817,7 @@ const EXTRA_CASE_03_SOURCE = [
     {
       id: "q_ex3b_what_hide",
       text:
-        "今は、アイテム全体を1年間非公開にしようと考えているんですか？",
+        "非公開にする範囲としては、今のところアイテム全体を想定されていますか？",
 
       requiresAll: [],
       requiresAny: [],
@@ -840,7 +839,7 @@ const EXTRA_CASE_03_SOURCE = [
     {
       id: "q_ex3b_version",
       text:
-        "出版社の条件では、どの版に公開制限があるんですか？",
+        "出版社の条件では、公開制限の対象になっているのはどの版でしょうか？",
 
       requiresAll: ["policy_checked"],
       requiresAny: [],
@@ -880,17 +879,17 @@ const EXTRA_CASE_03_SOURCE = [
     {
       id: "q_ex3b_metadata",
       text:
-        "タイトルや著者名、掲載誌などの情報も、12か月間見せたくないんですか？",
+        "タイトルや著者名、掲載誌などのメタデータについては、どのように公開したいとお考えですか？",
 
       requiresAll: ["embargo_12m"],
       requiresAny: [],
 
-      response:
-        "いえ、それは今から公開して大丈夫です。むしろ、リポジトリに登録されていること自体は見えるようにしたいですね。",
+response:
+  "メタデータは今から公開して大丈夫だと思っています。できれば、リポジトリに登録されていること自体は分かるようにしておきたいですね。",
 
-      responseVariants: [
-        "書誌情報まで隠す必要はないです。タイトルや著者名は普通に見えていて構いません。",
-      ],
+responseVariants: [
+  "タイトルや著者名などは、今から見える状態で構いません。公開を待つ必要があるのは本文のほうですね。",
+],
 
       reveals: [
         "metadata_now",
@@ -901,7 +900,7 @@ const EXTRA_CASE_03_SOURCE = [
     {
       id: "q_ex3b_actual_target",
       text:
-        "では、エンバーゴ期間中に利用できない状態にしたいのは、本文ファイルだけですか？",
+        "エンバーゴ期間中、本文ファイルについてはどのような状態にしておきたいですか？",
 
       requiresAll: [
         "embargo_12m",
@@ -910,12 +909,12 @@ const EXTRA_CASE_03_SOURCE = [
 
       requiresAny: [],
 
-      response:
-        "……そうですね。言われてみれば、見せられないのは著者最終稿のPDFだけです。アイテム全部を隠したいわけではないですね。",
+response:
+  "著者最終稿の本文だけは、公開できる時期までは読めない状態にしておきたいです。メタデータまで非公開にする必要はなさそうですね。",
 
-      responseVariants: [
-        "はい。公開条件が付いているのは本文なので、メタデータとは分けて考えればいいんですね。",
-      ],
+responseVariants: [
+  "本文は公開可能日まで利用できないようにして、メタデータは先に公開しておければと思っています。",
+],
 
       reveals: ["file_only_embargo"],
     },
@@ -949,7 +948,7 @@ const EXTRA_CASE_03_SOURCE = [
     {
       id: "q_ex3b_hypothesis",
       text:
-        "確認ですが、メタデータは今から公開して、著者最終稿の本文だけ公開可能日まで利用できない状態にし、エンバーゴ明けに必要な確認も含めて適切に公開を管理したい、ということでしょうか？",
+        "ここまで伺うと、メタデータは先に公開して、本文は公開可能日までエンバーゴにしておきたい、ということですね。エンバーゴが終わったあとの確認も含めて、公開の管理方法を知りたいということでしょうか？",
 
       requiresAll: [
         "embargo_12m",
@@ -995,18 +994,17 @@ const EXTRA_CASE_03_SOURCE = [
     {
       id: "q_ex3b_manual",
       text:
-        "1年後に担当者が手動でアイテム全体を公開する想定でしたか？",
+        "エンバーゴが終わったあとは、どのように公開するイメージでしたか？",
 
       requiresAll: ["whole_item_assumption"],
       requiresAny: [],
 
-      response:
-        "はい。カレンダーに書いておいて、1年後に公開へ変更するしかないのかなと思っていました。でも、それだと忘れそうで……。",
+response:
+  "最初は、1年後に担当者が手動でアイテム全体を公開するのかなと思っていました。ただ、忘れずに管理できるか少し心配で。",
 
-      responseVariants: [
-        "そのつもりでした。だから、もっと管理しやすい方法がないのかなと思って相談したんです。",
-      ],
-
+responseVariants: [
+  "期間が終わったところで公開設定を変更するものだと思っていました。ほかに確認が必要なところもあるなら、それも把握しておきたいです。",
+],
       reveals: ["manual_release_concern"],
       distractor: "plausible",
     },
@@ -1015,45 +1013,44 @@ const EXTRA_CASE_03_SOURCE = [
     // 雑談
     // ============================================================
 
-    {
-      id: "q_ex3b_irrelevant",
-      text:
-        "出版社ポリシーを調べるの、大変じゃなかったですか？",
+{
+  id: "q_ex3b_irrelevant",
+  text:
+    "そういえば、今日はもうお昼は済ませましたか？",
 
-      requiresAll: ["policy_checked"],
-      requiresAny: [],
+  requiresAll: [],
+  requiresAny: [],
 
-      response:
-        "ちょっと大変でした。似たような言葉がたくさん出てきて、『これは今回の版の話だよね？』って何度も読み直しました。",
+  response:
+    "まだなんです。この相談が終わったら、何か食べようと思っていました。",
 
-      responseVariants: [
-        "慣れていないので時間がかかりました。でも、公開前に確認しておかないと怖いので。",
-      ],
-
-      reveals: ["smalltalk_followup"],
-      distractor: "irrelevant",
-      distractorTone: "cheerful",
-    },
-
-    {
-      id: "q_ex3b_smalltalk_followup",
-      text:
-        "確認できたときは、ちょっと達成感ありますよね。",
-
-      requiresAll: ["smalltalk_followup"],
-      requiresAny: [],
-
-      response:
-        "あります。『12か月！ 見つけた！』って思いました。そのあと、じゃあシステムではどうするんだろう、って次の問題が出てきましたけど。",
-
-      responseVariants: [
-        "ありますね。一つ分かると、その先にまた知らないことが出てくるんですけど。",
-      ],
-
-      reveals: [],
-      smallTalkFollowUp: true,
-    },
+  responseVariants: [
+    "まだです。ちょうどそろそろお昼にしようかなと思っていたところです。",
   ],
+
+  reveals: ["smalltalk_followup"],
+  distractor: "irrelevant",
+  distractorTone: "cheerful",
+},
+
+{
+  id: "q_ex3b_smalltalk_followup",
+  text:
+    "何か食べたいものは決まっていますか？",
+
+  requiresAll: ["smalltalk_followup"],
+  requiresAny: [],
+
+  response:
+    "まだ迷っています。学食に行くか、近くでパンを買うか……たぶん戻る途中で決めます。",
+
+  responseVariants: [
+    "まだ決めていないんです。今日は少し軽めのものがいいかな、くらいですね。",
+  ],
+
+  reveals: [],
+  smallTalkFollowUp: true,
+},
 
   deduction: {
     template:
