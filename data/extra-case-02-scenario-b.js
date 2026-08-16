@@ -159,7 +159,7 @@ export const EXTRA_CASE_02_SCENARIO_B = {
       response:
         "できればOAにはしたいと思っています。義務だから、ということではなくて、せっかくの研究なので、読める人は多いほうがいいなと思っていて。",
       responseVariants: [
-        "義務ではないとしても、公開できるのであれば、できるだけ広く読んでもらえる状態にはしておきたいですね。。",
+        "義務ではないとしても、公開できるのであれば、できるだけ広く読んでもらえる状態にはしておきたいですね。",
       ],
       reveals: ["still_wants_open"],
     },
@@ -177,19 +177,20 @@ export const EXTRA_CASE_02_SCENARIO_B = {
     },
     {
       id: "q_ex2b_apc_priority",
-      text: "APCがもう少し安ければ、迷わず出版社のOAを選びますか？",
+text: "APCの金額は、公開方法を選ぶうえでどのくらい気になっていますか？",
       requiresAll: ["publisher_apc_offer"],
       requiresAny: [],
-      response:
-        "うーん、金額だけでは決めないと思います。安ければ払う、というより、ほかにどういう方法があるのかを知ってから考えたいです。",
-      responseVariants: [
-        "値段だけの問題ではないですね。出版社でOAにする方法しかないなら別ですが、そうとも限らないんですよね？",
-      ],
+response:
+  "金額はもちろん気になりますが、それだけで決めるつもりはないですね。ほかにどんな方法があるのかも確認してから考えたいです。",
+
+responseVariants: [
+  "費用も判断材料の一つですが、まずは利用できる方法を知って、そのうえで考えたいと思っています。",
+],
       reveals: ["apc_not_main_issue"],
     },
     {
       id: "q_ex2b_other_options",
-      text: "出版社でOAにする以外の公開方法については、何かご存じですか？",
+text: "出版社でOAにする以外の方法については、何か検討されていますか？",
       requiresAll: ["still_wants_open"],
       requiresAny: ["publisher_apc_offer", "apc_not_main_issue"],
       response:
@@ -236,7 +237,7 @@ export const EXTRA_CASE_02_SCENARIO_B = {
     },
     {
       id: "q_ex2b_coauthors",
-      text: "共著者の方から、OAについて希望は出ていますか？",
+text: "共著者の方とは、OAについて何かお話しされていますか？",
       requiresAll: ["accepted_stage"],
       requiresAny: [],
       response:
@@ -249,14 +250,15 @@ export const EXTRA_CASE_02_SCENARIO_B = {
     },
     {
       id: "q_ex2b_journal",
-      text: "この雑誌を選んだとき、OAにできることは重視していましたか？",
+text: "この雑誌を選ばれたときは、どのような点を重視されましたか？",
       requiresAll: [],
       requiresAny: [],
-      response:
-        "いえ。研究内容に合っていて、この分野の人がよく読む雑誌だったので選びました。OAのことはアクセプトされてから考え始めましたね。",
-      responseVariants: [
-        "OAかどうかでは選んでいません。投稿先として一番合っていたからです。",
-      ],
+response:
+  "研究内容に合っていて、この分野の研究者によく読まれていることを重視しました。OAについては、アクセプトされてから考え始めたんです。",
+
+responseVariants: [
+  "投稿先として研究内容に合っていることが一番でした。OAかどうかは、選ぶときにはあまり意識していませんでした。",
+],
       reveals: ["journal_reason"],
       distractor: "plausible",
     },
@@ -276,7 +278,7 @@ export const EXTRA_CASE_02_SCENARIO_B = {
     },
     {
       id: "q_ex2b_smalltalk_followup",
-      text: "アクセプトだと分かった瞬間、どうでした？",
+text: "アクセプトだと分かったときは、いかがでしたか？",
       requiresAll: ["smalltalk_followup"],
       requiresAny: [],
       response:
