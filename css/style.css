@@ -2770,11 +2770,6 @@ body {
 .ending-credits--rolling .ending-credits__roll {
   animation: ending-credits-roll 20s 2.4s linear forwards;
 }
-.ending-credits--static .ending-credits__roll {
-  top: 50%;
-  transform: translate(-50%, -50%);
-  animation: none !important;
-}
 .ending-credits__roll p {
   margin: 0 0 54px;
   display: grid;
@@ -2941,5 +2936,26 @@ body {
   cursor: pointer;
 }
 .ending-credits__exit[hidden] { display: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ending-credits {
+    animation-duration: 2.8s !important;
+  }
+  .ending-credits--rolling .ending-credits__roll {
+    animation-duration: 20s !important;
+  }
+  .ending-credit-photo-pair,
+  .ending-credit-photo img,
+  .ending-credit-photo::after {
+    animation-duration: 4.6s !important;
+  }
+  .ending-credits__thanks {
+    animation-duration: 700ms !important;
+  }
+  .ending-credits__final-photo img,
+  .ending-credits__final-photo::after {
+    animation-duration: 1.4s !important;
+  }
+}
 
 .site-shell--headerless:has(.ending-screen--illustration) .footer-line { display: none; }

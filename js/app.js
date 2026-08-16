@@ -499,29 +499,24 @@ function showEndingCredits() {
     if (progress.endingSeen !== true) progress = markEndingSeen(progress);
     announce("Thank you for Playing! エンディングを最後まで視聴しました。");
   };
-  if (prefersReducedMotion()) {
-    credits.classList.add("ending-credits--static");
-    endingCreditsFallbackTimer = window.setTimeout(finishCredits, 8000);
-  } else {
-    const handleRollEnd = (event) => {
-      if (
-        event.target !== roll ||
-        event.animationName !== "ending-credits-roll"
-      ) {
-        return;
-      }
-      roll.removeEventListener("animationend", handleRollEnd);
-      finishCredits();
-    };
-    roll.addEventListener("animationend", handleRollEnd);
-    // iOS Safariでは hidden 解除と同時に定義済みの animation が開始しない場合がある。
-    // レイアウト確定後にクラスを付け、終了通知が欠落した場合にも備える。
-    void roll.offsetWidth;
-    window.requestAnimationFrame(() => {
-      credits.classList.add("ending-credits--rolling");
-      endingCreditsFallbackTimer = window.setTimeout(finishCredits, 23000);
-    });
-  }
+  const handleRollEnd = (event) => {
+    if (
+      event.target !== roll ||
+      event.animationName !== "ending-credits-roll"
+    ) {
+      return;
+    }
+    roll.removeEventListener("animationend", handleRollEnd);
+    finishCredits();
+  };
+  roll.addEventListener("animationend", handleRollEnd);
+  // iOS Safariでは hidden 解除と同時に定義済みの animation が開始しない場合がある。
+  // レイアウト確定後にクラスを付け、終了通知が欠落した場合にも備える。
+  void roll.offsetWidth;
+  window.requestAnimationFrame(() => {
+    credits.classList.add("ending-credits--rolling");
+    endingCreditsFallbackTimer = window.setTimeout(finishCredits, 23000);
+  });
 }
 
 function advanceEnding() {
