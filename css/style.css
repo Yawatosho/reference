@@ -2765,6 +2765,9 @@ body {
   left: 50%;
   width: min(680px, calc(100% - 40px));
   text-align: center;
+  animation: none;
+}
+.ending-credits--rolling .ending-credits__roll {
   animation: ending-credits-roll 20s 2.4s linear forwards;
 }
 .ending-credits__roll p {

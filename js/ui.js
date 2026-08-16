@@ -69,7 +69,7 @@ export function topScreen(progress) {
     </section>`, { header: false, volume: progress.volume });
 }
 
-export function caseSelectScreen(cases, progress) {
+export function caseSelectScreen(cases, progress, options = {}) {
   const completed = cases.filter(({ data }) =>
     progress.completedCases.includes(data.id),
   ).length;
@@ -129,7 +129,8 @@ export function caseSelectScreen(cases, progress) {
     <section class="progress-panel" aria-label="進行状況">
       <div><span class="progress-panel__value">${String(completed).padStart(2, "0")}<small>/${String(cases.length).padStart(2, "0")}</small></span><span>COMPLETED CASES</span></div>
       <button class="text-button text-button--danger" data-action="reset-progress">進行状況をリセット</button>
-    </section>`, { compact: true, volume: progress.volume });
+    </section>
+    ${options.showEndingUnlockedNotice ? endingUnlockedDialog() : ""}`, { compact: true, volume: progress.volume });
 }
 
 function endingAccessPanel(progress, location) {
@@ -438,7 +439,6 @@ export function resultScreen(session, progress, hasNextCase, options = {}) {
         <button class="secondary-button" data-action="replay" disabled>もう一度</button>
         ${(hasNextCase || options.endingUnlockedNow) ? '<button class="text-button" data-action="cases" disabled>ケース一覧へ</button>' : ""}
       </div>
-      ${options.endingUnlockedNow ? endingUnlockedDialog() : ""}
     </section>`, { compact: true, volume: progress.volume });
 }
 

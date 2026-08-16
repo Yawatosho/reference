@@ -44,7 +44,7 @@ import {
   interviewScreen,
   resultScreen,
   topScreen,
-} from "./ui.js?v=20260816-fiction1";
+} from "./ui.js?v=20260816-ending-mobile-notice1";
 
 const app = document.querySelector("#app");
 const liveRegion = document.querySelector("#live-region");
@@ -58,13 +58,13 @@ let typingTimer = null;
 let activeTypingController = null;
 let endingTypingTimer = null;
 let endingTypingController = null;
+let endingCreditsFallbackTimer = null;
 let questionFeedbackTimer = null;
 let resultRevealController = null;
 let resultRevealFrame = null;
 const resultRevealTimers = new Set();
 let renderVersion = 0;
 let endingState = null;
-let endingUnlockPending = false;
 const mobileInterviewQuery = "(max-width: 760px)";
 
 function prefersReducedMotion() {
@@ -94,6 +94,10 @@ function mount(markup, { focus = true, preserveScroll = false } = {}) {
     window.clearTimeout(endingTypingTimer);
     endingTypingTimer = null;
   }
+  if (endingCreditsFallbackTimer !== null) {
+    window.clearTimeout(endingCreditsFallbackTimer);
+    endingCreditsFallbackTimer = null;
+  }
   if (questionFeedbackTimer !== null) {
     window.clearTimeout(questionFeedbackTimer);
     questionFeedbackTimer = null;
@@ -109,7 +113,6 @@ function mount(markup, { focus = true, preserveScroll = false } = {}) {
 
 function renderTop() {
   endingState = null;
-  endingUnlockPending = false;
   currentCase = null;
   session = null;
   stopScreenMusic();
@@ -119,7 +122,8 @@ function renderTop() {
 
 function renderCases() {
   endingState = null;
-  endingUnlockPending = false;
+  const shouldShowEndingNotice =
+    isEndingUnlocked(progress) && progress.endingUnlockedNoticed !== true;
   const caseView = CASES.filter((data) => isCaseVisible(data, progress)).map(
     (data) => ({
       data,
@@ -127,8 +131,15 @@ function renderCases() {
     }),
   );
   stopScreenMusic();
-  mount(caseSelectScreen(caseView, progress));
+  mount(
+    caseSelectScreen(caseView, progress, {
+      showEndingUnlockedNotice: shouldShowEndingNotice,
+    }),
+  );
   trackPageView("cases", `ケースファイル｜${document.title}`);
+  if (shouldShowEndingNotice) {
+    window.requestAnimationFrame(showEndingUnlockedNotice);
+  }
 }
 
 function animateConversation(conversation, conversationView = null) {
@@ -327,9 +338,7 @@ function renderDeduction() {
 
 function renderResult() {
   const currentIndex = CASES.findIndex((item) => item.id === currentCase.id);
-  mount(resultScreen(session, progress, currentIndex < CASES.length - 1, {
-    endingUnlockedNow: endingUnlockPending,
-  }));
+  mount(resultScreen(session, progress, currentIndex < CASES.length - 1));
   playScreenMusic("result");
   trackPageView(
     `cases/${currentCase.id}/result`,
@@ -338,7 +347,6 @@ function renderResult() {
   startResultReveal(() => {
     const score = session.state.score;
     announce(`採点結果は${score.total}点、ランク${score.rank}です。`);
-    if (endingUnlockPending) showEndingUnlockedNotice();
   });
 }
 
@@ -346,7 +354,6 @@ function showEndingUnlockedNotice() {
   const dialog = document.querySelector("#ending-unlocked-dialog");
   if (!dialog?.showModal) return;
   progress = markEndingUnlockedNoticed(progress);
-  endingUnlockPending = false;
   dialog.showModal();
   trackPageView("ending/unlocked", `エンディング解放｜${document.title}`);
   announce("エンディングが解放されました。CASE 01から10のベストスコアが、すべて100点になりました。");
@@ -405,7 +412,6 @@ function typeEndingMessage(message) {
 
 function renderEnding(dialogueIndex = 0) {
   if (!isEndingUnlocked(progress)) return renderCases();
-  endingUnlockPending = false;
   currentCase = null;
   session = null;
   const lastIndex = ENDING_DIALOGUE_LINES.length - 1;
@@ -478,7 +484,14 @@ function showEndingCredits() {
   trackPageView("ending/credits", `スタッフロール｜${document.title}`);
   announce("スタッフロール。Illustration ChatGPT、Programming Codex、BGM Suno、効果音 効果音ラボ、Produce やわらか図書館学。");
 
+  let creditsFinished = false;
   const finishCredits = () => {
+    if (creditsFinished) return;
+    creditsFinished = true;
+    if (endingCreditsFallbackTimer !== null) {
+      window.clearTimeout(endingCreditsFallbackTimer);
+      endingCreditsFallbackTimer = null;
+    }
     credits.dataset.complete = "true";
     roll.hidden = true;
     thanks.hidden = false;
@@ -490,6 +503,13 @@ function showEndingCredits() {
     finishCredits();
   } else {
     roll.addEventListener("animationend", finishCredits, { once: true });
+    // iOS Safariでは hidden 解除と同時に定義済みの animation が開始しない場合がある。
+    // レイアウト確定後にクラスを付け、終了通知が欠落した場合にも備える。
+    void roll.offsetWidth;
+    window.requestAnimationFrame(() => {
+      credits.classList.add("ending-credits--rolling");
+      endingCreditsFallbackTimer = window.setTimeout(finishCredits, 23000);
+    });
   }
 }
 
@@ -931,13 +951,8 @@ app.addEventListener("click", (event) => {
   }
 
   if (action === "submit-answer") {
-    const wasEndingUnlocked = isEndingUnlocked(progress);
     const score = session.submitDeduction();
     progress = recordResult(progress, currentCase.id, score.total);
-    endingUnlockPending =
-      !wasEndingUnlocked &&
-      isEndingUnlocked(progress) &&
-      progress.endingUnlockedNoticed !== true;
     button.disabled = true;
     const cutin = getDebugCutin() ?? selectCutin(score);
     playDecisionSound(cutin);
