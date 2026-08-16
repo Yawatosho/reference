@@ -2770,6 +2770,11 @@ body {
 .ending-credits--rolling .ending-credits__roll {
   animation: ending-credits-roll 20s 2.4s linear forwards;
 }
+.ending-credits--static .ending-credits__roll {
+  top: 50%;
+  transform: translate(-50%, -50%);
+  animation: none !important;
+}
 .ending-credits__roll p {
   margin: 0 0 54px;
   display: grid;
