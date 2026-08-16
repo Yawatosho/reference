@@ -434,6 +434,8 @@ responseVariants: [
   smallTalkFollowUp: true,
 },
 
+  ],
+
   deduction: {
     template:
       "{slot1}。{slot2}。しかし、{slot3}ため、{slot4}。",
@@ -1051,6 +1053,8 @@ responseVariants: [
   reveals: [],
   smallTalkFollowUp: true,
 },
+
+  ],
 
   deduction: {
     template:
