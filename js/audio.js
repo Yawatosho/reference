@@ -1,5 +1,9 @@
 const SCREEN_MUSIC = Object.freeze({
   interview: new URL("../sound/interview.mp3", import.meta.url).href,
+  interviewDetective: new URL(
+    "../sound/interview_det.mp3?v=20260818-clean1",
+    import.meta.url,
+  ).href,
   deduction: new URL("../sound/ask.mp3", import.meta.url).href,
   result: new URL("../sound/result.mp3", import.meta.url).href,
 });

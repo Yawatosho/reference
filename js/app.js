@@ -8,7 +8,7 @@ import {
   startMessageSound,
   stopMessageSound,
   stopScreenMusic,
-} from "./audio.js?v=20260815-ending1";
+} from "./audio.js?v=20260818-detective-interview1";
 import {
   cutinDebugMarkup,
   getDebugCutin,
@@ -304,6 +304,10 @@ function moveConversationIntoViewOnMobile(conversation) {
   });
 }
 
+function getInterviewMusicScreen(caseId) {
+  return caseId === "extra01" ? "interviewDetective" : "interview";
+}
+
 function renderInterview(options = {}) {
   const {
     preserveScroll = false,
@@ -315,7 +319,7 @@ function renderInterview(options = {}) {
     interviewScreen(session, { ...screenOptions, volume: progress.volume }),
     { focus: !preserveScroll, preserveScroll },
   );
-  playScreenMusic("interview");
+  playScreenMusic(getInterviewMusicScreen(currentCase?.id));
   trackPageView(
     `cases/${currentCase.id}/interview`,
     `${currentCase.title}｜インタビュー｜${document.title}`,
@@ -839,7 +843,14 @@ function primeInterviewMusicFromControl(target) {
   ) {
     return;
   }
-  playScreenMusic("interview");
+  let targetCaseId = currentCase?.id;
+  if (button.dataset.action === "select-case") {
+    targetCaseId = button.dataset.caseId;
+  } else if (button.dataset.action === "next-case") {
+    const currentIndex = CASES.findIndex((item) => item.id === currentCase?.id);
+    targetCaseId = CASES[currentIndex + 1]?.id;
+  }
+  playScreenMusic(getInterviewMusicScreen(targetCaseId));
 }
 
 app.addEventListener("pointerdown", (event) => {
