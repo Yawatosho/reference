@@ -58,11 +58,11 @@ export const EXTRA_CASE_05_DETECTIVE_PHASE = {
     logSubtitle: "消えた本の手がかり",
     deductionLogTitle: "消えた本の手がかり",
     deductionPrompt:
-      "青年の話に含まれる時代のずれを整理して、本が見つからない理由を考えます。",
+      "集まった手がかりをつないで、『消えた本』の謎を考えます。",
     limitStatus:
-      "本の情報はそろっています。それでも見つからない理由は、本そのものではないのかもしれません。",
+      "本の情報はかなり集まりました。それでも、まだ何かが噛み合っていないようです。",
     limitPrompt:
-      "集まった手がかりから、「消えた本」の正体をまとめてみましょう。",
+      "集まった手がかりから、「消えた本」の謎をまとめてみましょう。",
     deduceButton: "わかった！ 回答をまとめる",
     limitButton: "回答をまとめる",
     deductionEyebrow: "MYSTERY SOLUTION",
