@@ -1,11 +1,11 @@
 import { createAdditionalCases } from "./additional-cases.js?v=20260812-conversationpaths2";
-import { createExtraCases } from "./extra-case.js?v=20260816-fiction1";
+import { createExtraCases } from "./extra-case.js?v=20260822-ex5-year1";
 
 export const GAME_CONFIG = Object.freeze({
   title: "THE REFERENCE INTERVIEW GAME",
   subtitle: "ほんとの質問",
   maxQuestions: 6,
-  totalCases: 13,
+  totalCases: 15,
   messageSounds: Object.freeze({
     defaultPatron: "message1",
     librarian: "message2",

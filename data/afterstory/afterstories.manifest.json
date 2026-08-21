@@ -1,0 +1,152 @@
+[
+  {
+    "caseId": "case01",
+    "caseNumber": "01",
+    "markdownPath": "./data/afterstory/afterstory_case1.md",
+    "illustrationPath": "./assets/characters/afterstory_01.webp",
+    "pagination": {
+      "mode": "fixedLines",
+      "linesPerPage": 22,
+      "charactersPerLine": 34
+    },
+    "unlock": {
+      "type": "bestScore",
+      "minimum": 100
+    }
+  },
+  {
+    "caseId": "case02",
+    "caseNumber": "02",
+    "markdownPath": "./data/afterstory/afterstory_case2.md",
+    "illustrationPath": "./assets/characters/afterstory_02.webp",
+    "pagination": {
+      "mode": "fixedLines",
+      "linesPerPage": 22,
+      "charactersPerLine": 34
+    },
+    "unlock": {
+      "type": "bestScore",
+      "minimum": 100
+    }
+  },
+  {
+    "caseId": "case03",
+    "caseNumber": "03",
+    "markdownPath": "./data/afterstory/afterstory_case3.md",
+    "illustrationPath": "./assets/characters/afterstory_03.webp",
+    "pagination": {
+      "mode": "fixedLines",
+      "linesPerPage": 22,
+      "charactersPerLine": 34
+    },
+    "unlock": {
+      "type": "bestScore",
+      "minimum": 100
+    }
+  },
+  {
+    "caseId": "case04",
+    "caseNumber": "04",
+    "markdownPath": "./data/afterstory/afterstory_case4.md",
+    "illustrationPath": "./assets/characters/afterstory_04.webp",
+    "pagination": {
+      "mode": "fixedLines",
+      "linesPerPage": 22,
+      "charactersPerLine": 34
+    },
+    "unlock": {
+      "type": "bestScore",
+      "minimum": 100
+    }
+  },
+  {
+    "caseId": "case05",
+    "caseNumber": "05",
+    "markdownPath": "./data/afterstory/afterstory_case5.md",
+    "illustrationPath": "./assets/characters/afterstory_05.webp",
+    "pagination": {
+      "mode": "fixedLines",
+      "linesPerPage": 22,
+      "charactersPerLine": 34
+    },
+    "unlock": {
+      "type": "bestScore",
+      "minimum": 100
+    }
+  },
+  {
+    "caseId": "case06",
+    "caseNumber": "06",
+    "markdownPath": "./data/afterstory/afterstory_case6.md",
+    "illustrationPath": "./assets/characters/afterstory_06.webp",
+    "pagination": {
+      "mode": "fixedLines",
+      "linesPerPage": 22,
+      "charactersPerLine": 34
+    },
+    "unlock": {
+      "type": "bestScore",
+      "minimum": 100
+    }
+  },
+  {
+    "caseId": "case07",
+    "caseNumber": "07",
+    "markdownPath": "./data/afterstory/afterstory_case7.md",
+    "illustrationPath": "./assets/characters/afterstory_07.webp",
+    "pagination": {
+      "mode": "fixedLines",
+      "linesPerPage": 22,
+      "charactersPerLine": 34
+    },
+    "unlock": {
+      "type": "bestScore",
+      "minimum": 100
+    }
+  },
+  {
+    "caseId": "case08",
+    "caseNumber": "08",
+    "markdownPath": "./data/afterstory/afterstory_case8.md",
+    "illustrationPath": "./assets/characters/afterstory_08.webp",
+    "pagination": {
+      "mode": "fixedLines",
+      "linesPerPage": 22,
+      "charactersPerLine": 34
+    },
+    "unlock": {
+      "type": "bestScore",
+      "minimum": 100
+    }
+  },
+  {
+    "caseId": "case09",
+    "caseNumber": "09",
+    "markdownPath": "./data/afterstory/afterstory_case9.md",
+    "illustrationPath": "./assets/characters/afterstory_09.webp",
+    "pagination": {
+      "mode": "fixedLines",
+      "linesPerPage": 22,
+      "charactersPerLine": 34
+    },
+    "unlock": {
+      "type": "bestScore",
+      "minimum": 100
+    }
+  },
+  {
+    "caseId": "case10",
+    "caseNumber": "10",
+    "markdownPath": "./data/afterstory/afterstory_case10.md",
+    "illustrationPath": "./assets/characters/afterstory_10.webp",
+    "pagination": {
+      "mode": "fixedLines",
+      "linesPerPage": 22,
+      "charactersPerLine": 34
+    },
+    "unlock": {
+      "type": "bestScore",
+      "minimum": 100
+    }
+  }
+]

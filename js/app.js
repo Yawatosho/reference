@@ -1,14 +1,21 @@
-import { CASES } from "../data/cases.js?v=20260816-fiction1";
+import { CASES } from "../data/cases.js?v=20260822-ex5-year1";
 import {
   playScreenMusic,
   setAudioVolume,
   playChoiceSound,
   playQuestionSound,
   playDecisionSound,
+  playPageSound,
+  getRequestedMusicScreen,
   startMessageSound,
   stopMessageSound,
   stopScreenMusic,
-} from "./audio.js?v=20260818-detective-interview1";
+} from "./audio.js?v=20260821-afterstory2";
+import {
+  getAfterStory,
+  isAfterStoryUnlocked,
+  loadAfterStory,
+} from "../data/afterstories.js?v=20260822-afterstories11-lines22";
 import {
   cutinDebugMarkup,
   getDebugCutin,
@@ -22,7 +29,10 @@ import {
   getEndingIllustration,
   isEndingUnlocked,
 } from "./ending.js?v=20260815-ending-dialogue5";
-import { GameSession } from "./game.js?v=20260815-extra02-scenarios1";
+import {
+  createNextPhaseSession,
+  GameSession,
+} from "./game.js?v=20260820-ex5-1";
 import {
   clearProgress,
   isCaseUnlocked,
@@ -36,6 +46,8 @@ import {
 } from "./storage.js?v=20260815-ending1";
 import {
   answerChoiceDialog,
+  afterStoryDialog,
+  afterStoryPageMarkup,
   caseSelectScreen,
   confirmDialog,
   deductionScreen,
@@ -44,7 +56,7 @@ import {
   interviewScreen,
   resultScreen,
   topScreen,
-} from "./ui.js?v=20260816-ending-mobile-notice1";
+} from "./ui.js?v=20260822-afterstories11-lines22";
 
 const app = document.querySelector("#app");
 const liveRegion = document.querySelector("#live-region");
@@ -60,8 +72,12 @@ let endingTypingTimer = null;
 let endingTypingController = null;
 let endingCreditsFallbackTimer = null;
 let questionFeedbackTimer = null;
+let phaseTransitionTimer = null;
 let resultRevealController = null;
 let resultRevealFrame = null;
+let activeAfterStory = null;
+let afterStoryPageIndex = 0;
+let afterStoryPreviousMusicScreen = null;
 const resultRevealTimers = new Set();
 let renderVersion = 0;
 let endingState = null;
@@ -76,6 +92,13 @@ function announce(message) {
   window.setTimeout(() => {
     liveRegion.textContent = message;
   }, 30);
+}
+
+function setConversationScrollTop(conversation, top) {
+  const previousInlineBehavior = conversation.style.scrollBehavior;
+  conversation.style.scrollBehavior = "auto";
+  conversation.scrollTop = Math.max(0, top);
+  conversation.style.scrollBehavior = previousInlineBehavior;
 }
 
 function mount(markup, { focus = true, preserveScroll = false } = {}) {
@@ -102,13 +125,66 @@ function mount(markup, { focus = true, preserveScroll = false } = {}) {
     window.clearTimeout(questionFeedbackTimer);
     questionFeedbackTimer = null;
   }
+  if (phaseTransitionTimer !== null) {
+    window.clearTimeout(phaseTransitionTimer);
+    phaseTransitionTimer = null;
+  }
   cancelResultReveal();
-  app.innerHTML = `${markup}${howToDialog()}${confirmDialog()}${answerChoiceDialog()}${cutinDebugMarkup()}`;
+  app.innerHTML = `${markup}${howToDialog()}${confirmDialog()}${answerChoiceDialog()}${afterStoryDialog()}${cutinDebugMarkup()}`;
   if (focus) app.focus({ preventScroll: true });
   window.scrollTo({
     ...(scrollPosition ?? { left: 0, top: 0 }),
     behavior: "instant",
   });
+}
+
+function patchInterview(markup, conversationView = null) {
+  const currentHeader = app.querySelector(".interview-header");
+  const currentLayout = app.querySelector(".interview-layout");
+  const currentConversation = app.querySelector("#conversation");
+  if (!currentHeader || !currentLayout || !currentConversation) return false;
+
+  const template = document.createElement("template");
+  template.innerHTML = markup.trim();
+  const nextHeader = template.content.querySelector(".interview-header");
+  const nextLayout = template.content.querySelector(".interview-layout");
+  const nextConversation = template.content.querySelector("#conversation");
+  if (!nextHeader || !nextLayout || !nextConversation) return false;
+
+  const windowScroll = { left: window.scrollX, top: window.scrollY };
+  const previousMessageCount = currentConversation.children.length;
+  const nextMessages = [...nextConversation.children];
+
+  renderVersion += 1;
+  stopMessageSound();
+  activeTypingController = null;
+  if (typingTimer !== null) {
+    window.clearTimeout(typingTimer);
+    typingTimer = null;
+  }
+
+  currentConversation
+    .querySelectorAll(".message--latest")
+    .forEach((message) => message.classList.remove("message--latest"));
+  nextMessages.slice(previousMessageCount).forEach((message) => {
+    currentConversation.append(message);
+  });
+  nextConversation.replaceWith(currentConversation);
+  currentHeader.replaceWith(nextHeader);
+  currentLayout.replaceWith(nextLayout);
+
+  const previousBottomOffset = Math.max(
+    0,
+    Number(conversationView?.bottomOffset ?? 0),
+  );
+  setConversationScrollTop(
+    currentConversation,
+    currentConversation.scrollHeight -
+      currentConversation.clientHeight -
+      previousBottomOffset,
+  );
+  window.scrollTo({ ...windowScroll, behavior: "instant" });
+  return true;
 }
 
 function renderTop() {
@@ -142,9 +218,25 @@ function renderCases() {
   }
 }
 
-function animateConversation(conversation, conversationView = null) {
+function animateConversation(
+  conversation,
+  conversationView = null,
+  onComplete = null,
+) {
+  const version = renderVersion;
+  let didComplete = false;
+  const notifyComplete = () => {
+    if (didComplete || typeof onComplete !== "function") return;
+    didComplete = true;
+    window.requestAnimationFrame(() => {
+      if (version === renderVersion) onComplete();
+    });
+  };
   const recoveryNotice = document.querySelector("[data-recovery-notice]");
   const limitNotice = document.querySelector("[data-limit-notice]");
+  const phaseChoiceActions = document.querySelector(
+    "[data-phase-choice-actions]",
+  );
   const revealRecoveryNotice = () => {
     if (!recoveryNotice?.hidden) return;
     recoveryNotice.hidden = false;
@@ -153,18 +245,33 @@ function animateConversation(conversation, conversationView = null) {
     );
   };
   const revealLimitNotice = () => {
-    if (!limitNotice?.hidden) return;
-    limitNotice.hidden = false;
-    announce(limitNotice.textContent.replace(/\s+/g, " ").trim());
+    if (limitNotice?.hidden) {
+      limitNotice.hidden = false;
+      announce(limitNotice.textContent.replace(/\s+/g, " ").trim());
+    }
+    if (phaseChoiceActions?.hidden) {
+      phaseChoiceActions.hidden = false;
+    }
   };
   const revealConversationNotices = () => {
     revealLimitNotice();
     revealRecoveryNotice();
   };
   const targets = [...conversation.querySelectorAll("[data-typing-text]")];
+  const completeTypingTarget = (target) => {
+    const fullText = target.dataset.typingText ?? target.textContent ?? "";
+    target.textContent = fullText;
+    target.removeAttribute("data-typing-text");
+    target.removeAttribute("aria-hidden");
+    const accessibleCopy = target.nextElementSibling;
+    if (accessibleCopy?.classList.contains("sr-only")) {
+      accessibleCopy.remove();
+    }
+  };
   if (targets.length === 0) {
-    conversation.scrollTop = conversation.scrollHeight;
+    setConversationScrollTop(conversation, conversation.scrollHeight);
     revealConversationNotices();
+    notifyComplete();
     return;
   }
 
@@ -173,12 +280,13 @@ function animateConversation(conversation, conversationView = null) {
     prefersReducedMotion() &&
     !isMobileInterview
   ) {
-    conversation.scrollTop = conversation.scrollHeight;
+    targets.forEach(completeTypingTarget);
+    setConversationScrollTop(conversation, conversation.scrollHeight);
     revealConversationNotices();
+    notifyComplete();
     return;
   }
 
-  const version = renderVersion;
   const messages = targets.map((target) => target.closest(".message"));
   const questionButtons = [
     ...document.querySelectorAll(".question-button:not(:disabled)"),
@@ -204,13 +312,13 @@ function animateConversation(conversation, conversationView = null) {
     0,
     Number(conversationView?.bottomOffset ?? 0),
   );
-  conversation.scrollTop = Math.max(
-    0,
+  setConversationScrollTop(
+    conversation,
     conversation.scrollHeight - conversation.clientHeight - previousBottomOffset,
   );
 
   const scrollToLatestMessage = () => {
-    conversation.scrollTop = conversation.scrollHeight;
+    setConversationScrollTop(conversation, conversation.scrollHeight);
   };
 
   let targetIndex = 0;
@@ -228,7 +336,10 @@ function animateConversation(conversation, conversationView = null) {
     });
     activeTypingController = null;
     typingTimer = null;
-    window.requestAnimationFrame(scrollToLatestMessage);
+    window.requestAnimationFrame(() => {
+      scrollToLatestMessage();
+      notifyComplete();
+    });
   };
 
   const finishCurrentMessage = (skipped = false) => {
@@ -240,7 +351,7 @@ function animateConversation(conversation, conversationView = null) {
     }
 
     const target = targets[targetIndex];
-    target.textContent = target.dataset.typingText ?? "";
+    completeTypingTarget(target);
     scrollToLatestMessage();
     if (skipped || messages[targetIndex]?.dataset.messageLoop !== "false") {
       stopMessageSound();
@@ -304,8 +415,13 @@ function moveConversationIntoViewOnMobile(conversation) {
   });
 }
 
-function getInterviewMusicScreen(caseId) {
-  return caseId === "extra01" ? "interviewDetective" : "interview";
+function getInterviewMusicScreen(caseDataOrId) {
+  const caseId =
+    typeof caseDataOrId === "string" ? caseDataOrId : caseDataOrId?.id;
+  const isDetectivePhase = caseDataOrId?.phaseMeta?.player === "detective";
+  return caseId === "case05" || caseId === "extra01" || isDetectivePhase
+    ? "interviewDetective"
+    : "interview";
 }
 
 function renderInterview(options = {}) {
@@ -313,13 +429,19 @@ function renderInterview(options = {}) {
     preserveScroll = false,
     moveToConversation = false,
     conversationView = null,
+    onConversationComplete = null,
     ...screenOptions
   } = options;
-  mount(
-    interviewScreen(session, { ...screenOptions, volume: progress.volume }),
-    { focus: !preserveScroll, preserveScroll },
-  );
-  playScreenMusic(getInterviewMusicScreen(currentCase?.id));
+  const markup = interviewScreen(session, {
+    ...screenOptions,
+    volume: progress.volume,
+  });
+  const patched =
+    preserveScroll && patchInterview(markup, conversationView);
+  if (!patched) {
+    mount(markup, { focus: !preserveScroll, preserveScroll });
+  }
+  playScreenMusic(getInterviewMusicScreen(session?.caseData ?? currentCase));
   trackPageView(
     `cases/${currentCase.id}/interview`,
     `${currentCase.title}｜インタビュー｜${document.title}`,
@@ -327,7 +449,11 @@ function renderInterview(options = {}) {
   const conversation = document.querySelector("#conversation");
   if (conversation) {
     if (moveToConversation) moveConversationIntoViewOnMobile(conversation);
-    animateConversation(conversation, conversationView);
+    animateConversation(
+      conversation,
+      conversationView,
+      onConversationComplete,
+    );
   }
 }
 
@@ -658,6 +784,79 @@ function closeDialog(button) {
   button.closest("dialog")?.close();
 }
 
+function renderAfterStoryPage() {
+  if (!activeAfterStory) return;
+  const content = document.querySelector("[data-after-story-content]");
+  const pageNumber = document.querySelector("[data-after-story-page-number]");
+  const previousButton = document.querySelector(
+    '[data-action="previous-after-story"]',
+  );
+  const nextButton = document.querySelector('[data-action="next-after-story"]');
+  const totalPages = activeAfterStory.pages.length + 1;
+  afterStoryPageIndex = Math.min(
+    Math.max(0, afterStoryPageIndex),
+    totalPages - 1,
+  );
+  if (content) {
+    content.innerHTML = afterStoryPageMarkup(
+      activeAfterStory,
+      afterStoryPageIndex,
+    );
+    content.scrollTop = 0;
+  }
+  if (pageNumber) {
+    pageNumber.textContent = `${afterStoryPageIndex + 1} / ${totalPages}`;
+  }
+  if (previousButton) {
+    const isCoverPage = afterStoryPageIndex === 0;
+    previousButton.disabled = isCoverPage;
+    previousButton.classList.toggle("is-concealed", isCoverPage);
+    previousButton.setAttribute("aria-hidden", String(isCoverPage));
+  }
+  if (nextButton) nextButton.disabled = afterStoryPageIndex >= totalPages - 1;
+}
+
+function restoreMusicAfterAfterStory() {
+  const previousScreen = afterStoryPreviousMusicScreen;
+  activeAfterStory = null;
+  afterStoryPageIndex = 0;
+  afterStoryPreviousMusicScreen = null;
+  if (previousScreen) {
+    playScreenMusic(previousScreen);
+  } else {
+    stopScreenMusic();
+  }
+}
+
+async function openAfterStory(caseId) {
+  const configuredStory = getAfterStory(caseId);
+  if (!isAfterStoryUnlocked(configuredStory, progress)) return;
+  const dialog = document.querySelector("#after-story-dialog");
+  if (!dialog?.showModal) return;
+  playPageSound();
+  const story = await loadAfterStory(configuredStory);
+
+  activeAfterStory = story;
+  afterStoryPageIndex = 0;
+  afterStoryPreviousMusicScreen = getRequestedMusicScreen();
+  renderAfterStoryPage();
+  dialog.addEventListener("close", restoreMusicAfterAfterStory, { once: true });
+  dialog.showModal();
+  playScreenMusic("afterstory");
+  trackPageView(
+    `cases/${caseId}/after-story`,
+    `${story.title}｜After Story｜${document.title}`,
+  );
+  announce(`CASE ${story.caseNumber}の後日談「${story.title}」を開きました。`);
+}
+
+function moveAfterStoryPage(offset) {
+  if (!activeAfterStory) return;
+  afterStoryPageIndex += offset;
+  renderAfterStoryPage();
+  playPageSound();
+}
+
 function updateDeductionSelection() {
   const sentence = document.querySelector(".sentence-preview p");
   const answerButton = document.querySelector(".answer-button");
@@ -773,6 +972,121 @@ function beginSelectedCase() {
   );
 }
 
+function advanceInterviewPhase() {
+  const previousSession = session;
+  const previousConversationLength = previousSession.state.conversation.length;
+  const transition = previousSession.caseData.phaseTransition;
+  const version = renderVersion;
+  const delay = Number(transition?.delayBeforeNextPhaseMs ?? 0);
+
+  const completeTransition = () => {
+    phaseTransitionTimer = null;
+    if (session !== previousSession || version !== renderVersion) return;
+    const nextSession = createNextPhaseSession(previousSession);
+    if (!nextSession) return;
+
+    session = nextSession;
+    renderInterview({
+      typingFrom: previousConversationLength,
+      preserveScroll: true,
+      moveToConversation: true,
+    });
+    const nextPlayer =
+      nextSession.caseData.presentation?.playerLabel ?? "司書さん";
+    announce(
+      `${nextPlayer}が聞き取りを引き継ぎました。質問回数は${nextSession.getQuestionLimit()}回です。`,
+    );
+  };
+
+  if (delay <= 0) return completeTransition();
+  phaseTransitionTimer = window.setTimeout(completeTransition, delay);
+}
+
+function getResultBand(total) {
+  return total >= 85 ? "high" : total >= 50 ? "medium" : "low";
+}
+
+function normalizeResultTransitionMessage(entry, transition) {
+  if (entry.speaker === "detective") {
+    return {
+      ...entry,
+      speaker: "librarian",
+      playerAvatar:
+        session.caseData.presentation?.playerAvatar ??
+        "./assets/characters/extra-detective-icon.webp?v=20260811-white1",
+      messageSound:
+        session.caseData.presentation?.playerMessageSound ?? "message3",
+    };
+  }
+  if (entry.speaker === "librarian") {
+    return {
+      ...entry,
+      speaker: "librarian",
+      playerAvatar: "",
+      messageSound:
+        transition.nextCaseData?.presentation?.playerMessageSound ?? "message2",
+    };
+  }
+  return { ...entry };
+}
+
+function continueFromResultToNextPhase(button) {
+  const transition = session.caseData.phaseTransition;
+  if (
+    transition?.trigger !== "after-result" ||
+    !transition.nextCaseData ||
+    !session.state.score
+  ) {
+    return;
+  }
+
+  button.disabled = true;
+  const resultBand = getResultBand(session.state.score.total);
+  const transitionMessages = [
+    ...(transition.resultMessagesByBand?.[resultBand] ?? []),
+    ...(transition.commonMessages ?? []),
+  ].map((entry) => normalizeResultTransitionMessage(entry, transition));
+  const typingFrom = session.state.conversation.length;
+  session.state.conversation.push(...transitionMessages);
+  renderInterview({
+    transitioning: true,
+    typingFrom,
+    moveToConversation: true,
+    onConversationComplete: advanceInterviewPhase,
+  });
+  announce("まだ依頼は終わっていません。会話の続きを確認してください。");
+}
+
+function continueToNextInterviewPhase() {
+  const transition = session.caseData.phaseTransition;
+  if (!transition?.nextCaseData) return;
+
+  const conversation = document.querySelector("#conversation");
+  const conversationView = conversation
+    ? {
+        bottomOffset: Math.max(
+          0,
+          conversation.scrollHeight -
+            conversation.clientHeight -
+            conversation.scrollTop,
+        ),
+      }
+    : null;
+  const typingFrom = session.state.conversation.length;
+  if (transition.beforeSwitchMessage) {
+    session.state.conversation.push({ ...transition.beforeSwitchMessage });
+  }
+  renderInterview({
+    transitioning: true,
+    typingFrom,
+    preserveScroll: true,
+    moveToConversation: true,
+    conversationView,
+    onConversationComplete: advanceInterviewPhase,
+  });
+  announce("司書さんは、相談に残る違和感をもう一度考えています。");
+}
+
 function askSelectedQuestion(questionId) {
   const previousConversation = document.querySelector("#conversation");
   const conversationView = previousConversation
@@ -797,7 +1111,12 @@ function askSelectedQuestion(questionId) {
     });
     const limitButton =
       session.caseData.presentation?.limitButton ?? "回答をまとめる";
-    announce(`質問は${session.getQuestionLimit()}回で終了です。最後の返答を確認してから、「${limitButton}」へ進んでください。`);
+    const phaseChoiceCopy =
+      session.caseData.phaseTransition?.nextCaseData &&
+      session.caseData.phaseTransition?.trigger !== "after-result"
+      ? `「${limitButton}」または「まだ何か引っかかる……」を選んでください。`
+      : `「${limitButton}」へ進んでください。`;
+    announce(`質問は${session.getQuestionLimit()}回で終了です。最後の返答を確認してから、${phaseChoiceCopy}`);
     return;
   }
 
@@ -843,14 +1162,16 @@ function primeInterviewMusicFromControl(target) {
   ) {
     return;
   }
-  let targetCaseId = currentCase?.id;
+  let targetCaseData = session?.caseData ?? currentCase;
   if (button.dataset.action === "select-case") {
-    targetCaseId = button.dataset.caseId;
+    targetCaseData = findCase(button.dataset.caseId);
   } else if (button.dataset.action === "next-case") {
     const currentIndex = CASES.findIndex((item) => item.id === currentCase?.id);
-    targetCaseId = CASES[currentIndex + 1]?.id;
+    targetCaseData = CASES[currentIndex + 1];
+  } else if (button.dataset.action === "replay") {
+    targetCaseData = currentCase;
   }
-  playScreenMusic(getInterviewMusicScreen(targetCaseId));
+  playScreenMusic(getInterviewMusicScreen(targetCaseData));
 }
 
 app.addEventListener("pointerdown", (event) => {
@@ -900,6 +1221,14 @@ app.addEventListener("click", (event) => {
   if (action === "cases") return renderCases();
   if (action === "howto") return openDialog("#howto-dialog");
   if (action === "close-dialog") return closeDialog(button);
+  if (action === "open-after-story") {
+    return openAfterStory(button.dataset.caseId);
+  }
+  if (action === "close-after-story") {
+    return button.closest("dialog")?.close();
+  }
+  if (action === "previous-after-story") return moveAfterStoryPage(-1);
+  if (action === "next-after-story") return moveAfterStoryPage(1);
   if (action === "view-ending") {
     button.closest("dialog")?.close();
     return renderEnding(0);
@@ -935,6 +1264,14 @@ app.addEventListener("click", (event) => {
 
   if (action === "continue-deduction") return renderDeduction();
 
+  if (action === "continue-next-phase") {
+    return continueToNextInterviewPhase();
+  }
+
+  if (action === "continue-result-phase") {
+    return continueFromResultToNextPhase(button);
+  }
+
   if (action === "confirm-deduce") {
     session.startDeduction();
     return renderDeduction();
@@ -969,12 +1306,16 @@ app.addEventListener("click", (event) => {
 
   if (action === "submit-answer") {
     const score = session.submitDeduction();
-    progress = recordResult(progress, currentCase.id, score.total);
+    const continuesAfterResult =
+      session.caseData.phaseTransition?.trigger === "after-result";
+    if (!continuesAfterResult) {
+      progress = recordResult(progress, currentCase.id, score.total);
+    }
     button.disabled = true;
     const cutin = getDebugCutin() ?? selectCutin(score);
     playDecisionSound(cutin);
     const presentation = showCutin(cutin, {
-      assetVariant: currentCase.presentation?.cutinAssetVariant,
+      assetVariant: session.caseData.presentation?.cutinAssetVariant,
     });
     presentation.then(() => {
       renderResult();
@@ -1008,6 +1349,12 @@ app.addEventListener("click", (event) => {
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape") {
     document.querySelector("dialog[open]")?.close();
+    return;
+  }
+
+  if (activeAfterStory && ["ArrowLeft", "ArrowRight"].includes(event.key)) {
+    event.preventDefault();
+    moveAfterStoryPage(event.key === "ArrowLeft" ? -1 : 1);
     return;
   }
 

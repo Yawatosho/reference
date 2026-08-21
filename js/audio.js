@@ -6,6 +6,10 @@ const SCREEN_MUSIC = Object.freeze({
   ).href,
   deduction: new URL("../sound/ask.mp3", import.meta.url).href,
   result: new URL("../sound/result.mp3", import.meta.url).href,
+  afterstory: new URL(
+    "../sound/afterstory.mp3?v=20260821-afterstory1",
+    import.meta.url,
+  ).href,
 });
 const ENDING_MUSIC = new URL("../sound/ending.mp3", import.meta.url).href;
 
@@ -25,6 +29,10 @@ const NORMAL_DECISION_SOUND = new URL(
   import.meta.url,
 ).href;
 const CHOICE_SOUND = new URL("../sound/choice.mp3", import.meta.url).href;
+const PAGE_SOUND = new URL(
+  "../sound/page.mp3?v=20260821-page1",
+  import.meta.url,
+).href;
 
 const musicPlayer = new Audio();
 musicPlayer.loop = true;
@@ -32,6 +40,7 @@ musicPlayer.preload = "auto";
 
 let activeTrack = null;
 let requestedTrack = null;
+let requestedScreen = null;
 let musicGain = 1;
 let musicFadeFrame = null;
 let musicFadeTimer = null;
@@ -57,6 +66,9 @@ decisionPlayer.preload = "auto";
 
 const choicePlayer = new Audio();
 choicePlayer.preload = "auto";
+
+const pagePlayer = new Audio();
+pagePlayer.preload = "auto";
 
 function applyMusicVolume() {
   musicPlayer.volume = MUSIC_VOLUME * masterVolume * musicGain;
@@ -210,6 +222,7 @@ export function setAudioVolume(volume) {
   messagePlayer.volume = 0.5 * masterVolume;
   decisionPlayer.volume = 0.7 * masterVolume;
   choicePlayer.volume = 0.56 * masterVolume;
+  pagePlayer.volume = 0.48 * masterVolume;
 
   if (masterVolume <= 0) {
     musicTransitionId += 1;
@@ -219,6 +232,7 @@ export function setAudioVolume(volume) {
     messagePlayer.pause();
     decisionPlayer.pause();
     choicePlayer.pause();
+    pagePlayer.pause();
     if (!requestedTrack) {
       musicStopInProgress = false;
       musicPlayer.removeAttribute("src");
@@ -249,6 +263,7 @@ export function playScreenMusic(screen) {
   const nextTrack = screen === "ending" ? ENDING_MUSIC : SCREEN_MUSIC[screen];
   const nextTrackLoops = screen !== "ending";
   if (!nextTrack) return stopScreenMusic();
+  requestedScreen = screen;
   if (
     nextTrack === requestedTrack &&
     nextTrack === activeTrack &&
@@ -307,6 +322,7 @@ export function playScreenMusic(screen) {
 }
 
 export function stopScreenMusic() {
+  requestedScreen = null;
   if (musicStopInProgress) return;
   requestedTrack = null;
   requestedTrackLoops = true;
@@ -341,6 +357,10 @@ export function stopScreenMusic() {
     musicGain = 1;
     applyMusicVolume();
   });
+}
+
+export function getRequestedMusicScreen() {
+  return requestedScreen;
 }
 
 export function startMessageSound(soundId, playbackRate = 1, loop = true) {
@@ -387,6 +407,17 @@ export function playChoiceSound() {
 
 export function playQuestionSound() {
   playChoiceSoundAtVolume(0.58);
+}
+
+export function playPageSound() {
+  if (masterVolume <= 0) return;
+  pagePlayer.pause();
+  pagePlayer.src = PAGE_SOUND;
+  pagePlayer.volume = 0.48 * masterVolume;
+  pagePlayer.currentTime = 0;
+  pagePlayer.play().catch(() => {
+    // 音声再生が制限された環境でもページ操作は継続する。
+  });
 }
 
 function playChoiceSoundAtVolume(volumeScale) {

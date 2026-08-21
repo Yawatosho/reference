@@ -611,7 +611,8 @@ export class GameSession {
 
     this.state.askedQuestionIds.add(questionId);
     this.state.questionsUsed += 1;
-    const recoveredQuestions = question.smallTalkFollowUp
+    const recoveredQuestions =
+      question.smallTalkFollowUp && this.caseData.allowQuestionRecovery !== false
       ? Math.floor(normalizeRandomValue(this.random()) * 3) + 1
       : 0;
     this.state.questionBonus += recoveredQuestions;
@@ -732,4 +733,49 @@ export class GameSession {
     this.state.phase = "result";
     return this.state.score;
   }
+}
+
+export function createNextPhaseSession(currentSession) {
+  const transition = currentSession?.caseData?.phaseTransition;
+  if (!transition?.nextCaseData) return null;
+
+  const previousPresentation = currentSession.caseData.presentation ?? {};
+  const previousPlayerAvatar = previousPresentation.playerAvatar ?? "";
+  const previousPlayerSound =
+    previousPresentation.playerMessageSound ?? "message2";
+  const previousConversation = currentSession.state.conversation.map((entry) =>
+    entry.speaker === "librarian"
+      ? {
+          ...entry,
+          playerAvatar: entry.playerAvatar ?? previousPlayerAvatar,
+          messageSound: entry.messageSound ?? previousPlayerSound,
+        }
+      : { ...entry },
+  );
+
+  const nextSession = new GameSession(transition.nextCaseData, {
+    random: currentSession.random,
+  });
+  const openingConversation = transition.openingConversation?.length
+    ? transition.openingConversation
+    : transition.nextPhaseOpeningSuppressed
+      ? []
+      : [
+          ...(transition.messages ?? []),
+          ...nextSession.state.conversation,
+        ];
+  nextSession.state.conversation = [
+    ...previousConversation,
+    ...openingConversation.map((entry) => ({ ...entry })),
+  ];
+
+  const carryFactIds = new Set(transition.carryFactIds ?? []);
+  nextSession.state.knownFacts = new Set(
+    [...currentSession.state.knownFacts].filter(
+      (factId) =>
+        carryFactIds.has(factId) && Boolean(nextSession.caseData.facts[factId]),
+    ),
+  );
+
+  return nextSession;
 }

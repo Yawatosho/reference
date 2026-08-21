@@ -1,9 +1,14 @@
-import { GAME_CONFIG } from "../data/cases.js?v=20260816-fiction1";
+import { GAME_CONFIG } from "../data/cases.js?v=20260822-ex5-year1";
 import {
+  getAfterStory,
+  isAfterStoryUnlocked,
+} from "../data/afterstories.js?v=20260822-afterstories11-lines22";
+import {
+  ENDING_REQUIRED_CASES,
   ENDING_DIALOGUE_LINES,
   getEndingIllustration,
   isEndingUnlocked,
-} from "./ending.js?v=20260815-ending-dialogue5";
+} from "./ending.js?v=20260820-ending-hint1";
 
 const escapeMap = {
   "&": "&amp;",
@@ -73,18 +78,24 @@ export function caseSelectScreen(cases, progress, options = {}) {
   const completed = cases.filter(({ data }) =>
     progress.completedCases.includes(data.id),
   ).length;
+  const mainCasesComplete = ENDING_REQUIRED_CASES.every((caseId) =>
+    progress.completedCases.includes(caseId),
+  );
+  const endingUnlocked = isEndingUnlocked(progress);
   return shell(`
     <section class="page-heading">
       <p class="eyebrow"><span></span> CASE FILES</p>
       <h1>ケースファイルを選ぶ</h1>
       <p>ケースは順番に解放されます。相手の言葉をよく聞き、質問を重ねて答えを見つけてください。</p>
     </section>
-    ${isEndingUnlocked(progress) ? endingAccessPanel(progress, "cases") : ""}
+    ${endingUnlocked ? endingAccessPanel(progress, "cases") : mainCasesComplete ? endingUnlockHintPanel(progress) : ""}
     <section class="case-grid" aria-label="ケース一覧">
       ${cases
         .map(({ data, unlocked }) => {
           const isComplete = progress.completedCases.includes(data.id);
           const best = progress.bestScores[data.id];
+          const afterStory = getAfterStory(data.id);
+          const afterStoryUnlocked = isAfterStoryUnlocked(afterStory, progress);
           const cardPortraitStyles = [];
           if (data.patron.cardPortraitPosition) {
             cardPortraitStyles.push(
@@ -118,10 +129,11 @@ export function caseSelectScreen(cases, progress, options = {}) {
                 <span>${escapeHtml(data.difficulty)}</span>
                 ${best !== undefined ? `<span>BEST ${escapeHtml(best)}</span>` : ""}
               </div>
-              <button class="case-card__button" data-action="select-case" data-case-id="${escapeHtml(data.id)}" ${unlocked ? "" : "disabled"}>
+              <button class="case-card__button ${afterStoryUnlocked ? "case-card__button--with-afterstory" : ""}" data-action="select-case" data-case-id="${escapeHtml(data.id)}" ${unlocked ? "" : "disabled"}>
                 ${unlocked ? (isComplete ? "もう一度プレイ" : "ケースを開く") : escapeHtml(data.unlockHint ?? "前のケースをクリア")}
                 <span aria-hidden="true">${unlocked ? "→" : "⌑"}</span>
               </button>
+              ${afterStoryUnlocked ? `<button class="case-card__afterstory" data-action="open-after-story" data-case-id="${escapeHtml(data.id)}"><span>After Story</span><b aria-hidden="true">→</b></button>` : ""}
             </article>`;
         })
         .join("")}
@@ -131,6 +143,57 @@ export function caseSelectScreen(cases, progress, options = {}) {
       <button class="text-button text-button--danger" data-action="reset-progress">進行状況をリセット</button>
     </section>
     ${options.showEndingUnlockedNotice ? endingUnlockedDialog() : ""}`, { compact: true, volume: progress.volume });
+}
+
+function renderAfterStoryParagraph(paragraph) {
+  return `<p>${escapeHtml(paragraph).replace(/\n/g, "<br />")}</p>`;
+}
+
+export function afterStoryPageMarkup(story, pageIndex) {
+  const totalPages = story.pages.length + 1;
+  const safeIndex = Math.min(Math.max(0, pageIndex), totalPages - 1);
+  if (safeIndex === 0) {
+    return `<section class="afterstory-cover" aria-labelledby="after-story-title">
+      <div class="afterstory-cover__heading">
+        <p>After Story</p>
+        <span>Case ${escapeHtml(story.caseNumber)}</span>
+        <h2 id="after-story-title">${escapeHtml(story.title)}</h2>
+      </div>
+      <figure><img src="${escapeHtml(story.illustrationPath)}" alt="${escapeHtml(story.title)}の挿絵" /></figure>
+    </section>`;
+  }
+
+  const paragraphs = story.pages[safeIndex - 1] ?? [];
+  return `<article class="afterstory-page" aria-labelledby="after-story-title">
+    <header><span>After Story</span><small>Case ${escapeHtml(story.caseNumber)}</small></header>
+    <h2 id="after-story-title">${escapeHtml(story.title)}</h2>
+    <div class="afterstory-page__body">${paragraphs.map(renderAfterStoryParagraph).join("")}</div>
+  </article>`;
+}
+
+export function afterStoryDialog() {
+  return `<dialog class="modal modal--afterstory" id="after-story-dialog" aria-labelledby="after-story-title">
+    <div class="modal__header"><span>After Story</span><button data-action="close-after-story" aria-label="後日談を閉じる">×</button></div>
+    <div class="afterstory-view" data-after-story-content></div>
+    <nav class="afterstory-navigation" aria-label="後日談のページ移動">
+      <button class="secondary-button" data-action="previous-after-story" disabled><span aria-hidden="true">←</span> 前へ</button>
+      <span data-after-story-page-number aria-live="polite">1 / 1</span>
+      <button class="primary-button" data-action="next-after-story" disabled>次へ <span aria-hidden="true">→</span></button>
+    </nav>
+  </dialog>`;
+}
+
+function endingUnlockHintPanel(progress) {
+  const perfectCaseCount = ENDING_REQUIRED_CASES.filter(
+    (caseId) => progress.bestScores?.[caseId] === 100,
+  ).length;
+  return `<section class="ending-access ending-access--cases ending-access--locked" aria-label="エンディング解放条件">
+    <div class="ending-access__copy">
+      <p><span>ENDING</span><small>LOCKED</small></p>
+      <h2>${perfectCaseCount} / ${ENDING_REQUIRED_CASES.length} CASES <em>100</em></h2>
+      <span>すべてのケースを100点にすると、エンディングが解放されます。</span>
+    </div>
+  </section>`;
 }
 
 function endingAccessPanel(progress, location) {
@@ -196,7 +259,11 @@ function conversationMarkup(
       (entry, index) => {
         const shouldType = index >= typingFrom;
         const messageSoundConfig =
-          messageSounds[entry.speaker] ?? messageSounds.default ?? "message1";
+          entry.messageSound ??
+          messageSounds[entry.speaker] ??
+          messageSounds.default ??
+          "message1";
+        const entryPlayerAvatar = entry.playerAvatar ?? playerAvatar;
         const messageSound =
           typeof messageSoundConfig === "string"
             ? messageSoundConfig
@@ -213,7 +280,7 @@ function conversationMarkup(
       <div class="message message--${entry.speaker} ${index === conversation.length - 1 ? "message--latest" : ""}" data-message-sound="${escapeHtml(messageSound)}" data-message-rate="${escapeHtml(messageRate)}" data-message-loop="${escapeHtml(messageLoop)}">
         <div class="message__content">
           <span class="message__speaker">${escapeHtml(entry.label)}</span>
-          <p>${entry.speaker === "patron" && respondentAvatar ? `<span class="message-patron-icon" aria-hidden="true"><img src="${escapeHtml(respondentAvatar)}" alt="" /></span>` : ""}<span class="message__text"${shouldType ? ` data-typing-text="${escapeHtml(entry.text)}" aria-hidden="true"` : ""}>${escapeHtml(entry.text)}</span>${shouldType ? `<span class="sr-only">${escapeHtml(entry.text)}</span>` : ""}${entry.speaker === "librarian" ? playerAvatar ? `<span class="librarian-avatar message-librarian-icon message-player-icon--custom" aria-hidden="true"><img src="${escapeHtml(playerAvatar)}" alt="" /></span>` : '<span class="librarian-avatar message-librarian-icon" aria-hidden="true"></span>' : ""}</p>
+          <p>${entry.speaker === "patron" && respondentAvatar ? `<span class="message-patron-icon" aria-hidden="true"><img src="${escapeHtml(respondentAvatar)}" alt="" /></span>` : ""}<span class="message__text"${shouldType ? ` data-typing-text="${escapeHtml(entry.text)}" aria-hidden="true"` : ""}>${escapeHtml(entry.text)}</span>${shouldType ? `<span class="sr-only">${escapeHtml(entry.text)}</span>` : ""}${entry.speaker === "librarian" ? entryPlayerAvatar ? `<span class="librarian-avatar message-librarian-icon message-player-icon--custom" aria-hidden="true"><img src="${escapeHtml(entryPlayerAvatar)}" alt="" /></span>` : '<span class="librarian-avatar message-librarian-icon" aria-hidden="true"></span>' : ""}</p>
         </div>
       </div>`;
       },
@@ -223,10 +290,20 @@ function conversationMarkup(
 
 export function interviewScreen(
   session,
-  { limitNotice = false, recoveredQuestions = 0, typingFrom, volume = 1 } = {},
+  {
+    limitNotice = false,
+    transitioning = false,
+    recoveredQuestions = 0,
+    typingFrom,
+    volume = 1,
+  } = {},
 ) {
   const { caseData, state } = session;
   const presentation = getPresentation(caseData);
+  const hasPhaseChoice =
+    limitNotice &&
+    Boolean(caseData.phaseTransition?.nextCaseData) &&
+    caseData.phaseTransition?.trigger !== "after-result";
   const available = session
     .getQuestionStates()
     .filter(({ status }) => status !== "locked");
@@ -285,18 +362,18 @@ export function interviewScreen(
           playerAvatar: presentation.playerAvatar,
           respondentAvatar: patronImage,
         })}</div>
-        ${limitNotice ? `<div class="limit-notice" role="status" data-limit-notice hidden><strong>${escapeHtml(presentation.limitStatus)}</strong><span>最後の言葉を確認したら、「${escapeHtml(presentation.limitButton)}」を押してください。</span></div>` : ""}
+        ${limitNotice ? `<div class="limit-notice" role="status" data-limit-notice hidden><strong>${escapeHtml(presentation.limitStatus)}</strong><span>${hasPhaseChoice ? "最後の言葉を確認して、次の進め方を選んでください。" : `最後の言葉を確認したら、「${escapeHtml(presentation.limitButton)}」を押してください。`}</span></div>` : ""}
         ${recoveredQuestions > 0 ? `<div class="recovery-notice" role="status" data-recovery-notice hidden><strong>会話が弾みました。</strong><span>質問できる回数が${escapeHtml(recoveredQuestions)}回分回復しました。</span></div>` : ""}
         ${
-          limitNotice
+          limitNotice && !hasPhaseChoice
             ? ""
             : `<div class="question-area">
-          <div class="question-area__heading"><h2>次は、どんなことを聞いてみる？</h2><span>${askableCount} QUESTIONS AVAILABLE</span></div>
+          <div class="question-area__heading"><h2>次は、どんなことを聞いてみる？</h2><span>${transitioning || hasPhaseChoice ? "QUESTIONS CLOSED" : `${askableCount} QUESTIONS AVAILABLE`}</span></div>
           <div class="question-list">
             ${available
               .map(
                 ({ question, status }) => `
-                <button class="question-button ${status === "new" ? "question-button--new" : ""}" data-action="ask" data-question-id="${escapeHtml(question.id)}" ${status === "asked" ? "disabled" : ""}>
+                <button class="question-button ${status === "new" ? "question-button--new" : ""}" data-action="ask" data-question-id="${escapeHtml(question.id)}" ${status === "asked" || transitioning || hasPhaseChoice ? "disabled" : ""}>
                   <span>${escapeHtml(question.text)}</span>
                   ${status === "new" ? '<em>NEW</em>' : status === "asked" ? '<em class="asked">ASKED</em>' : '<b aria-hidden="true">→</b>'}
                 </button>`,
@@ -305,11 +382,14 @@ export function interviewScreen(
           </div>
         </div>`
         }
-        <div class="deduce-box">
+        ${transitioning ? "" : `<div class="deduce-box ${hasPhaseChoice ? "phase-choice-actions" : ""}" ${hasPhaseChoice ? "data-phase-choice-actions hidden" : ""}>
           <p>${escapeHtml(limitNotice ? presentation.limitPrompt : presentation.deductionPrompt)}</p>
-          <button class="deduce-button" data-action="${limitNotice ? "continue-deduction" : "deduce"}" ${canDeduce ? "" : "disabled"}>${escapeHtml(limitNotice ? presentation.limitButton : presentation.deduceButton)} <span aria-hidden="true">${limitNotice ? "→" : "✦"}</span></button>
-          <small>${state.questionsUsed === 0 ? "1問以上の質問で解放" : limitNotice ? "押すまでは回答を確認できます" : "聞き取った内容を振り返って回答しましょう"}</small>
-        </div>
+          <div class="${hasPhaseChoice ? "deduce-actions" : ""}">
+            <button class="deduce-button" data-action="${limitNotice ? "continue-deduction" : "deduce"}" ${canDeduce ? "" : "disabled"}>${escapeHtml(limitNotice ? presentation.limitButton : presentation.deduceButton)} <span aria-hidden="true">${limitNotice ? "→" : "✦"}</span></button>
+            ${hasPhaseChoice ? '<button class="deduce-button deduce-button--secondary" data-action="continue-next-phase">まだ何か引っかかる…… <span aria-hidden="true">→</span></button>' : ""}
+          </div>
+          <small>${state.questionsUsed === 0 ? "1問以上の質問で解放" : hasPhaseChoice ? "ここまでの回答をまとめるか、違和感を追うか選べます" : limitNotice ? "押すまでは回答を確認できます" : "聞き取った内容を振り返って回答しましょう"}</small>
+        </div>`}
       </div>
     </section>`, { compact: true, volume });
 }
@@ -394,6 +474,11 @@ export function resultScreen(session, progress, hasNextCase, options = {}) {
   const { caseData, state } = session;
   const presentation = getPresentation(caseData);
   const score = state.score;
+  const resultPhaseTransition =
+    caseData.phaseTransition?.trigger === "after-result";
+  const displayedBestScore = resultPhaseTransition
+    ? score.total
+    : Math.max(progress.bestScores[caseData.id] ?? 0, score.total);
   const reaction = getPatronReaction(caseData.patron, score.total);
   const resultPlayerPortrait =
     presentation.resultPlayerPortraits?.[reaction.level];
@@ -416,7 +501,7 @@ export function resultScreen(session, progress, hasNextCase, options = {}) {
           <blockquote>${escapeHtml(caseData.correctSentence)}</blockquote>
           <p>${escapeHtml(caseData.explanation)}</p>
           <div class="advice"><span>${escapeHtml(presentation.adviceLabel)}</span><p>${escapeHtml(caseData.advice)}</p></div>
-          <p class="best-score">BEST SCORE <strong>${escapeHtml(progress.bestScores[caseData.id])}</strong></p>
+          <p class="best-score">${resultPhaseTransition ? "THIS SCORE" : "BEST SCORE"} <strong>${escapeHtml(displayedBestScore)}</strong></p>
         </section>
       </div>
       <section class="patron-reaction patron-reaction--${reaction.level}" aria-labelledby="patron-reaction-title" data-result-patron>
@@ -435,9 +520,11 @@ export function resultScreen(session, progress, hasNextCase, options = {}) {
         <figure class="result-player-portrait result-player-portrait--${reaction.level}" data-result-rank><img src="${escapeHtml(resultPlayerPortrait)}" alt="${escapeHtml(presentation.resultPlayerName)}が${reaction.expressionLabel}表情" /></figure>
       </div>
       <div class="result-actions" data-result-actions>
-        ${options.endingUnlockedNow ? '<button class="primary-button primary-button--large" data-action="view-ending" disabled>エンディングを見る <span aria-hidden="true">→</span></button>' : hasNextCase ? '<button class="primary-button primary-button--large" data-action="next-case" disabled>次のケースへ <span aria-hidden="true">→</span></button>' : '<button class="primary-button primary-button--large" data-action="cases" disabled>ケース一覧へ <span aria-hidden="true">→</span></button>'}
+        ${resultPhaseTransition
+          ? `<button class="primary-button primary-button--large" data-action="continue-result-phase" disabled>${escapeHtml(caseData.phaseTransition.continueButtonLabel ?? "続きを聞く")} <span aria-hidden="true">→</span></button>`
+          : `${options.endingUnlockedNow ? '<button class="primary-button primary-button--large" data-action="view-ending" disabled>エンディングを見る <span aria-hidden="true">→</span></button>' : hasNextCase ? '<button class="primary-button primary-button--large" data-action="next-case" disabled>次のケースへ <span aria-hidden="true">→</span></button>' : '<button class="primary-button primary-button--large" data-action="cases" disabled>ケース一覧へ <span aria-hidden="true">→</span></button>'}
         <button class="secondary-button" data-action="replay" disabled>もう一度</button>
-        ${(hasNextCase || options.endingUnlockedNow) ? '<button class="text-button" data-action="cases" disabled>ケース一覧へ</button>' : ""}
+        ${(hasNextCase || options.endingUnlockedNow) ? '<button class="text-button" data-action="cases" disabled>ケース一覧へ</button>' : ""}`}
       </div>
     </section>`, { compact: true, volume: progress.volume });
 }
