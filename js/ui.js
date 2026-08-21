@@ -1,4 +1,4 @@
-import { GAME_CONFIG } from "../data/cases.js?v=20260822-ex5-year1";
+import { GAME_CONFIG } from "../data/cases.js?v=20260822-ex4-choice2";
 import {
   getAfterStory,
   isAfterStoryUnlocked,
@@ -302,8 +302,7 @@ export function interviewScreen(
   const presentation = getPresentation(caseData);
   const hasPhaseChoice =
     limitNotice &&
-    Boolean(caseData.phaseTransition?.nextCaseData) &&
-    caseData.phaseTransition?.trigger !== "after-result";
+    session.canContinueToNextPhase();
   const available = session
     .getQuestionStates()
     .filter(({ status }) => status !== "locked");

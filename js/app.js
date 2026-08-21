@@ -1,4 +1,4 @@
-import { CASES } from "../data/cases.js?v=20260822-ex5-year1";
+import { CASES } from "../data/cases.js?v=20260822-ex4-choice2";
 import {
   playScreenMusic,
   setAudioVolume,
@@ -32,7 +32,7 @@ import {
 import {
   createNextPhaseSession,
   GameSession,
-} from "./game.js?v=20260820-ex5-1";
+} from "./game.js?v=20260822-ex4-choice2";
 import {
   clearProgress,
   isCaseUnlocked,
@@ -56,7 +56,7 @@ import {
   interviewScreen,
   resultScreen,
   topScreen,
-} from "./ui.js?v=20260822-afterstories11-lines22";
+} from "./ui.js?v=20260822-ex4-choice2";
 
 const app = document.querySelector("#app");
 const liveRegion = document.querySelector("#live-region");
@@ -1059,7 +1059,7 @@ function continueFromResultToNextPhase(button) {
 
 function continueToNextInterviewPhase() {
   const transition = session.caseData.phaseTransition;
-  if (!transition?.nextCaseData) return;
+  if (!transition?.nextCaseData || !session.canContinueToNextPhase()) return;
 
   const conversation = document.querySelector("#conversation");
   const conversationView = conversation
@@ -1112,8 +1112,7 @@ function askSelectedQuestion(questionId) {
     const limitButton =
       session.caseData.presentation?.limitButton ?? "回答をまとめる";
     const phaseChoiceCopy =
-      session.caseData.phaseTransition?.nextCaseData &&
-      session.caseData.phaseTransition?.trigger !== "after-result"
+      session.canContinueToNextPhase()
       ? `「${limitButton}」または「まだ何か引っかかる……」を選んでください。`
       : `「${limitButton}」へ進んでください。`;
     announce(`質問は${session.getQuestionLimit()}回で終了です。最後の返答を確認してから、${phaseChoiceCopy}`);

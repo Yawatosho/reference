@@ -543,6 +543,17 @@ export class GameSession {
     return this.caseData.maxQuestions + this.state.questionBonus;
   }
 
+  canContinueToNextPhase() {
+    const transition = this.caseData.phaseTransition;
+    if (!transition?.nextCaseData || transition.trigger === "after-result") {
+      return false;
+    }
+    const requiredQuestionIds = transition.choiceRequiresQuestionIds ?? [];
+    return requiredQuestionIds.every((questionId) =>
+      this.state.askedQuestionIds.has(questionId),
+    );
+  }
+
   getQuestionStates() {
     return this.caseData.questions.map((question) => {
       if (this.state.askedQuestionIds.has(question.id)) {

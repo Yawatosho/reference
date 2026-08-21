@@ -1,5 +1,5 @@
 import { createAdditionalCases } from "./additional-cases.js?v=20260812-conversationpaths2";
-import { createExtraCases } from "./extra-case.js?v=20260822-ex5-year1";
+import { createExtraCases } from "./extra-case.js?v=20260822-ex4-choice2";
 
 export const GAME_CONFIG = Object.freeze({
   title: "THE REFERENCE INTERVIEW GAME",

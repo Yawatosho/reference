@@ -883,6 +883,10 @@ export const EXTRA_CASE_04 = Object.freeze({
   unlockHint: "EX CASE 3をクリア",
   phaseTransition: Object.freeze({
     nextCaseData: EXTRA_CASE_04_DETECTIVE_SESSION,
+    choiceRequiresQuestionIds: Object.freeze([
+      "q_ex4a_where",
+      "q_ex4a_when",
+    ]),
     delayBeforeNextPhaseMs: 1600,
     beforeSwitchMessage: Object.freeze({
       speaker: "librarian",

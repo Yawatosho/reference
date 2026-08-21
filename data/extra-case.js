@@ -1,6 +1,6 @@
 import { EXTRA_CASE_02 } from "./extra-case-02.js?v=20260816-fiction1";
 import { EXTRA_CASE_03 } from "./extra-case-03.js?v=20260816-fiction1";
-import { EXTRA_CASE_04 } from "./extra-case-04.js?v=20260819-ex4-choice1";
+import { EXTRA_CASE_04 } from "./extra-case-04.js?v=20260822-ex4-choice2";
 import { EXTRA_CASE_05 } from "./extra-case-05.js?v=20260822-ex5-year1";
 
 const EXTRA_UNLOCK_REQUIREMENTS = Object.freeze(["case10"]);
